@@ -45,7 +45,7 @@ class TestErrorHandlingAndRecovery:
         for invalid_url in invalid_urls:
             try:
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=invalid_url,
+                    backend_url=invalid_url,
                     model_id="test-model"
                 )
                 # Configuration creation might succeed, but client creation or usage should handle it
@@ -56,7 +56,7 @@ class TestErrorHandlingAndRecovery:
         # Test empty model ID
         try:
             config = nexus_nitro_llm.PyConfig(
-                lightllm_url="http://localhost:8000",
+                backend_url="http://localhost:8000",
                 model_id=""
             )
             print("  Config created with empty model ID")
@@ -69,12 +69,12 @@ class TestErrorHandlingAndRecovery:
 
         # Use a definitely unreachable URL
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://127.0.0.1:65432",  # Unlikely to be used port
+            backend_url="http://127.0.0.1:65432",  # Unlikely to be used port
             model_id="test-model"
         )
 
         try:
-            client = nexus_nitro_llm.PyLightLLMClient(config)
+            client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
             print("  Client created successfully")
 
             # Test connection should fail gracefully
@@ -134,13 +134,13 @@ class TestErrorHandlingAndRecovery:
             if i % 3 == 0:
                 # Invalid URL every 3rd config
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://invalid-host-{i}.local:8000",
+                    backend_url=f"http://invalid-host-{i}.local:8000",
                     model_id=f"model-{i}"
                 )
             else:
                 # Valid but unreachable URL
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://127.0.0.1:6543{i % 10}",
+                    backend_url=f"http://127.0.0.1:6543{i % 10}",
                     model_id=f"model-{i}"
                 )
             configs.append(config)
@@ -151,7 +151,7 @@ class TestErrorHandlingAndRecovery:
         def test_client(config_idx, config):
             """Test client operations and collect results."""
             try:
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
 
                 # Test connection
                 connection_result = client.test_connection()
@@ -226,12 +226,12 @@ class TestErrorHandlingAndRecovery:
         for i in range(100):
             try:
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://error-test-{i}.invalid:8000",
+                    backend_url=f"http://error-test-{i}.invalid:8000",
                     model_id=f"error-model-{i}"
                 )
                 weak_refs.append(weakref.ref(config))
 
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                 weak_refs.append(weakref.ref(client))
 
                 # Try operations that will likely fail
@@ -270,11 +270,11 @@ class TestErrorHandlingAndRecovery:
         print("\n🔄 Testing recovery after backend failure...")
 
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://127.0.0.1:65431",  # Unreachable port
+            backend_url="http://127.0.0.1:65431",  # Unreachable port
             model_id="recovery-test"
         )
 
-        client = nexus_nitro_llm.PyLightLLMClient(config)
+        client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
         messages = [nexus_nitro_llm.create_message("user", "Recovery test")]
 
         # Phase 1: Confirm failures
@@ -316,7 +316,7 @@ class TestErrorHandlingAndRecovery:
         print("\n📏 Testing message size limits...")
 
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="size-test"
         )
 
@@ -335,7 +335,7 @@ class TestErrorHandlingAndRecovery:
 
                 # Test with client (will likely fail due to no backend, but shouldn't crash)
                 try:
-                    client = nexus_nitro_llm.PyLightLLMClient(config)
+                    client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                     response = client.chat_completions(messages=[msg], max_tokens=1)
                     print(f"    ✅ Processed large message successfully")
                 except Exception as e:
@@ -351,7 +351,7 @@ class TestErrorHandlingAndRecovery:
         print("\n🧵 Testing thread safety during errors...")
 
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://127.0.0.1:65430",  # Unreachable
+            backend_url="http://127.0.0.1:65430",  # Unreachable
             model_id="thread-error-test"
         )
 
@@ -371,7 +371,7 @@ class TestErrorHandlingAndRecovery:
                 # Wait for all threads to be ready
                 barrier.wait()
 
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
 
                 for i in range(50):
                     try:

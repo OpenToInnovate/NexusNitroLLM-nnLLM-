@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 try:
     import nexus_nitro_llm
     from nexus_nitro_llm import (
-        PyConfig, PyMessage, PyLightLLMClient, PyStreamingClient,
+        PyConfig, PyMessage, PyNexusNitroLLMClient, PyStreamingClient,
         LightLLMError, ConnectionError, ConfigurationError
     )
     BINDINGS_AVAILABLE = True
@@ -42,22 +42,22 @@ class TestBasicFunctionality:
     def test_config_creation(self):
         """Test configuration object creation and properties."""
         config = PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="test-model",
             port=8080,
             token="test-token",
             timeout=30
         )
 
-        assert config.lightllm_url == "http://localhost:8000"
+        assert config.backend_url == "http://localhost:8000"
         assert config.model_id == "test-model"
 
         # Test setters
-        config.set_lightllm_url("http://localhost:8001")
+        config.set_backend_url("http://localhost:8001")
         config.set_model_id("new-model")
         config.set_token("new-token")
 
-        assert config.lightllm_url == "http://localhost:8001"
+        assert config.backend_url == "http://localhost:8001"
         assert config.model_id == "new-model"
 
         # Test connection pooling setting
@@ -68,11 +68,11 @@ class TestBasicFunctionality:
         """Test configuration validation and error handling."""
         # Test empty URL
         with pytest.raises(ConfigurationError):
-            PyConfig(lightllm_url="")
+            PyConfig(backend_url="")
 
         # Test invalid URL format
         with pytest.raises(ConfigurationError):
-            PyConfig(lightllm_url="invalid-url")
+            PyConfig(backend_url="invalid-url")
 
         # Test empty model ID
         with pytest.raises(ConfigurationError):
@@ -91,7 +91,7 @@ class TestBasicFunctionality:
         config = PyConfig()
         
         # Should have valid defaults
-        assert config.lightllm_url
+        assert config.backend_url
         assert config.model_id
         assert config.port > 0
 
@@ -121,12 +121,12 @@ class TestBasicFunctionality:
     def test_client_creation(self):
         """Test client creation and basic operations."""
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="test-model"
         )
 
         # Test client creation
-        client = nexus_nitro_llm.PyLightLLMClient(config)
+        client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
         assert client is not None
 
         # Test convenience function
@@ -145,7 +145,7 @@ class TestBasicFunctionality:
     def test_streaming_client_creation(self):
         """Test streaming client creation."""
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="test-model"
         )
 
@@ -159,7 +159,7 @@ class TestBasicFunctionality:
         # Create objects and keep weak references
         for i in range(100):
             config = nexus_nitro_llm.PyConfig(
-                lightllm_url=f"http://localhost:800{i % 10}",
+                backend_url=f"http://localhost:800{i % 10}",
                 model_id=f"model-{i}"
             )
             refs.append(weakref.ref(config))
@@ -183,7 +183,7 @@ class TestBasicFunctionality:
             configs = []
             for i in range(count):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://localhost:{8000 + i}",
+                    backend_url=f"http://localhost:{8000 + i}",
                     model_id=f"model-{i}"
                 )
                 configs.append(config)
@@ -214,7 +214,7 @@ class TestBasicFunctionality:
         for i, config in enumerate(all_configs):
             expected_port = 8000 + (i % 10)
             expected_model = f"model-{i % 10}"
-            assert config.lightllm_url == f"http://localhost:{expected_port}"
+            assert config.backend_url == f"http://localhost:{expected_port}"
             assert config.model_id == expected_model
 
     def test_error_conditions(self):
@@ -223,10 +223,10 @@ class TestBasicFunctionality:
         with pytest.raises(Exception):
             # This should work, but we test the pattern
             config = nexus_nitro_llm.PyConfig(
-                lightllm_url="invalid-url",  # Invalid URL format
+                backend_url="invalid-url",  # Invalid URL format
                 model_id=""  # Empty model
             )
-            client = nexus_nitro_llm.PyLightLLMClient(config)
+            client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
 
     def test_module_metadata(self):
         """Test module metadata and version information."""
@@ -244,12 +244,12 @@ class TestBasicFunctionality:
         """Test edge cases in configuration handling."""
         # Test None values
         config = nexus_nitro_llm.PyConfig()  # All defaults
-        assert config.lightllm_url
+        assert config.backend_url
         assert config.model_id
 
         # Test empty strings (should be handled gracefully)
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="model"
         )
 
@@ -261,8 +261,8 @@ class TestBasicFunctionality:
         ]
 
         for url in urls:
-            config = nexus_nitro_llm.PyConfig(lightllm_url=url)
-            assert config.lightllm_url == url
+            config = nexus_nitro_llm.PyConfig(backend_url=url)
+            assert config.backend_url == url
 
     def test_message_edge_cases(self):
         """Test edge cases in message handling."""
@@ -288,14 +288,14 @@ class TestBasicFunctionality:
     def test_object_reuse(self):
         """Test that objects can be reused safely."""
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="test-model"
         )
 
         # Create multiple clients with same config
         clients = []
         for i in range(10):
-            client = nexus_nitro_llm.PyLightLLMClient(config)
+            client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
             clients.append(client)
 
         # All clients should be independent
@@ -329,7 +329,7 @@ class TestPerformanceBasics:
         configs = []
         for i in range(1000):
             config = nexus_nitro_llm.PyConfig(
-                lightllm_url=f"http://localhost:{8000 + i % 100}",
+                backend_url=f"http://localhost:{8000 + i % 100}",
                 model_id=f"model-{i % 10}"
             )
             configs.append(config)
@@ -343,7 +343,7 @@ class TestPerformanceBasics:
         assert len(configs) == 1000
         for i, config in enumerate(configs):
             expected_port = 8000 + (i % 100)
-            assert config.lightllm_url == f"http://localhost:{expected_port}"
+            assert config.backend_url == f"http://localhost:{expected_port}"
 
     def test_message_creation_performance(self):
         """Test message creation performance."""
@@ -374,7 +374,7 @@ class TestPerformanceBasics:
         configs = []
         for i in range(10):
             config = nexus_nitro_llm.PyConfig(
-                lightllm_url=f"http://localhost:{8000 + i}",
+                backend_url=f"http://localhost:{8000 + i}",
                 model_id=f"model-{i}"
             )
             configs.append(config)
@@ -383,7 +383,7 @@ class TestPerformanceBasics:
 
         clients = []
         for config in configs:
-            client = nexus_nitro_llm.PyLightLLMClient(config)
+            client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
             clients.append(client)
 
         elapsed = time.time() - start_time

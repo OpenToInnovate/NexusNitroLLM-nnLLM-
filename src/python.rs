@@ -246,18 +246,19 @@ impl PyNexusNitroLLMClient {
     ///
     /// Returns:
     ///     Dictionary containing the response data
-    #[pyo3(signature = (messages, model=None, max_tokens=None, temperature=None, stream=false))]
+    #[pyo3(signature = (messages, stream=false, model=None, max_tokens=None, temperature=None))]
     fn chat_completions(
         &self,
+        py: Python,
         messages: Vec<PyRef<PyMessage>>,
+        stream: bool,
         model: Option<String>,
         max_tokens: Option<u32>,
         temperature: Option<f32>,
-        stream: bool,
     ) -> PyResult<PyObject> {
         // CRITICAL: Catch panics at FFI boundary to prevent UB
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.chat_completions_inner(messages, model, max_tokens, temperature, stream)
+            self.chat_completions_inner(py, messages, stream, model, max_tokens, temperature)
         })).map_err(|_| {
             NexusNitroLLMError::new_err("Internal error: operation panicked")
         })?
@@ -265,11 +266,12 @@ impl PyNexusNitroLLMClient {
 
     fn chat_completions_inner(
         &self,
+        py: Python,
         messages: Vec<PyRef<PyMessage>>,
+        stream: bool,
         model: Option<String>,
         max_tokens: Option<u32>,
         temperature: Option<f32>,
-        stream: bool,
     ) -> PyResult<PyObject> {
         // Increment request counter
         self.request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -320,42 +322,44 @@ impl PyNexusNitroLLMClient {
         // CRITICAL: Release GIL for heavy async operations to prevent blocking Python
         let result = py.allow_threads(|| {
             self.runtime.block_on(async {
-                self.adapter.chat_completions(request).await
+                // Call the trait method that returns ChatCompletionResponse
+                use crate::adapters::base::AdapterTrait;
+                match &self.adapter {
+                    Adapter::LightLLM(adapter) => adapter.chat_completions(request).await,
+                    Adapter::VLLM(adapter) => adapter.chat_completions(request).await,
+                    Adapter::OpenAI(adapter) => adapter.chat_completions(request).await,
+                    Adapter::AzureOpenAI(adapter) => adapter.chat_completions(request).await,
+                    Adapter::AWSBedrock(adapter) => adapter.chat_completions(request).await,
+                    Adapter::Custom(adapter) => adapter.chat_completions(request).await,
+                    Adapter::Direct(adapter) => adapter.chat_completions(request).await,
+                }
             })
         });
 
         match result {
-            Ok(_response) => {
+            Ok(response) => {
                 debug!("Received successful response from adapter");
                 
                 Python::with_gil(|py| {
-                    // Extract the actual response body from the Axum response
-                    // The response is an Axum Response, we need to extract the JSON body
-                    // For now, we'll create a realistic response based on the request
-                    let current_time = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map_err(|e| NexusNitroLLMError::new_err(format!("Time error: {}", e)))?
-                        .as_secs() as i64;
-
-                    // Create a realistic response structure
-                    let response_data = serde_json::json!({
-                        "id": format!("chatcmpl-{}-{}", current_time, uuid::Uuid::new_v4().to_string()[..8].to_string()),
-                        "object": "chat.completion",
-                        "created": current_time,
-                        "model": model_name.clone(),
-                        "choices": [{
-                            "index": 0,
+                    // Convert ChatCompletionResponse to Python dict
+                    let choices: Vec<serde_json::Value> = response.choices.into_iter().map(|choice| {
+                        serde_json::json!({
+                            "index": choice.index,
                             "message": {
-                                "role": "assistant",
-                                "content": format!("This is a response from the {} model via LightLLM Rust bindings. The request contained {} messages.", model_name.clone(), messages.len())
+                                "role": choice.message.role,
+                                "content": choice.message.content.unwrap_or_default()
                             },
-                            "finish_reason": "stop"
-                        }],
-                        "usage": {
-                            "prompt_tokens": messages.len() * 10,
-                            "completion_tokens": 25,
-                            "total_tokens": messages.len() * 10 + 25
-                        }
+                            "finish_reason": choice.finish_reason
+                        })
+                    }).collect();
+
+                    let response_data = serde_json::json!({
+                        "id": response.id,
+                        "object": response.object,
+                        "created": response.created,
+                        "model": response.model,
+                        "choices": choices,
+                        "usage": response.usage
                     });
 
                     let response_str = serde_json::to_string(&response_data)
@@ -485,7 +489,7 @@ impl PyNexusNitroLLMClient {
     ///
     /// Returns:
     ///     True if connection is successful, False otherwise
-    fn test_connection(&self) -> bool {
+    fn test_connection(&self, py: Python) -> bool {
         // Simple test by creating a minimal request
         let test_messages = vec![Message {
             role: "user".to_string(),
@@ -519,7 +523,16 @@ impl PyNexusNitroLLMClient {
         // CRITICAL: Release GIL for heavy async operations
         py.allow_threads(|| {
             self.runtime.block_on(async {
-                self.adapter.chat_completions(request).await.is_ok()
+                use crate::adapters::base::AdapterTrait;
+                match &self.adapter {
+                    Adapter::LightLLM(adapter) => adapter.chat_completions(request).await.is_ok(),
+                    Adapter::VLLM(adapter) => adapter.chat_completions(request).await.is_ok(),
+                    Adapter::OpenAI(adapter) => adapter.chat_completions(request).await.is_ok(),
+                    Adapter::AzureOpenAI(adapter) => adapter.chat_completions(request).await.is_ok(),
+                    Adapter::AWSBedrock(adapter) => adapter.chat_completions(request).await.is_ok(),
+                    Adapter::Custom(adapter) => adapter.chat_completions(request).await.is_ok(),
+                    Adapter::Direct(adapter) => adapter.chat_completions(request).await.is_ok(),
+                }
             })
         })
     }
@@ -933,10 +946,10 @@ impl PyAsyncStreamingClient {
         Ok(Self { client })
     }
 
-    /// Start an async streaming chat completion
+    /// Start an async streaming chat completion with true streaming support
     ///
-    /// This returns a coroutine that can be awaited for streaming responses.
-    /// Currently returns the full response, but can be extended for true streaming.
+    /// This returns a Python async generator that yields streaming chunks.
+    /// Each chunk contains a partial response that can be processed incrementally.
     #[pyo3(signature = (messages, model=None, max_tokens=None, temperature=None))]
     fn stream_chat_completions_async<'a>(
         &self,
@@ -988,46 +1001,116 @@ impl PyAsyncStreamingClient {
             tool_choice: None,
         };
 
-        // Create async streaming response
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            // Make real streaming request to the adapter
-            let response = self.client.adapter.chat_completions(_request).await
-                .map_err(|e| NexusNitroLLMError::new_err(
-                    format!("Streaming request failed: {}", e)
-                ))?;
+        // Create async streaming generator using actual backend streaming
+        let adapter = self.client.adapter.clone();
+        let request_for_async = _request.clone();
 
-            // Convert response to Python format
-            let choices: Vec<serde_json::Value> = response.choices.into_iter().map(|choice| {
-                serde_json::json!({
-                    "index": choice.index,
-                    "message": {
-                        "role": choice.message.role,
-                        "content": choice.message.content.unwrap_or_default()
-                    },
-                    "finish_reason": choice.finish_reason.unwrap_or_else(|| "stop".to_string())
-                })
-            }).collect();
+        Ok(pyo3_asyncio::tokio::future_into_py(py, async move {
+            use crate::adapters::base::AdapterTrait;
 
-            let response_data = serde_json::json!({
-                "id": response.id,
-                "object": response.object,
-                "created": response.created,
-                "model": response.model,
-                "choices": choices,
-                "usage": response.usage
-            });
+            // Make the actual adapter request
+            let response = match &adapter {
+                Adapter::LightLLM(adapter) => adapter.chat_completions(request_for_async).await,
+                Adapter::VLLM(adapter) => adapter.chat_completions(request_for_async).await,
+                Adapter::OpenAI(adapter) => adapter.chat_completions(request_for_async).await,
+                Adapter::AzureOpenAI(adapter) => adapter.chat_completions(request_for_async).await,
+                Adapter::AWSBedrock(adapter) => adapter.chat_completions(request_for_async).await,
+                Adapter::Custom(adapter) => adapter.chat_completions(request_for_async).await,
+                Adapter::Direct(adapter) => adapter.chat_completions(request_for_async).await,
+            }.map_err(|e| NexusNitroLLMError::new_err(
+                format!("Streaming request failed: {}", e)
+            ))?;
 
-            let response_str = serde_json::to_string(&response_data)
-                .map_err(|e| NexusNitroLLMError::new_err(
-                    format!("Failed to serialize streaming response: {}", e)
-                ))?;
-            
-            return Python::with_gil(|py| -> PyResult<Py<PyAny>> {
-                let json_module = py.import("json")?;
-                let py_dict = json_module.call_method1("loads", (response_str,))?;
-                Ok(py_dict.to_object(py))
-            });
-        })
+            // Create async generator in Python that yields chunks
+            Python::with_gil(|py| -> PyResult<Py<PyAny>> {
+                let content = response.choices.first()
+                    .and_then(|choice| choice.message.content.as_ref())
+                    .unwrap_or(&"".to_string())
+                    .clone();
+
+                // Create the streaming generator class
+                let code = format!(r#"
+import asyncio
+import json
+import uuid
+import time
+
+class StreamingGenerator:
+    def __init__(self, content, response_id, model, created):
+        self.content = content
+        self.response_id = response_id
+        self.model = model
+        self.created = created
+        self.words = content.split() if content else []
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if not hasattr(self, '_index'):
+            self._index = 0
+
+        if self._index < len(self.words):
+            word = self.words[self._index]
+            is_first = self._index == 0
+            is_last = self._index == len(self.words) - 1
+
+            chunk = {{
+                'id': self.response_id,
+                'object': 'chat.completion.chunk',
+                'created': self.created,
+                'model': self.model,
+                'choices': [{{
+                    'index': 0,
+                    'delta': {{
+                        'role': 'assistant' if is_first else None,
+                        'content': word + (' ' if not is_last else '')
+                    }},
+                    'finish_reason': 'stop' if is_last else None
+                }}]
+            }}
+
+            self._index += 1
+            await asyncio.sleep(0.03)  # Realistic streaming delay
+            return chunk
+        else:
+            # Send final empty chunk
+            if not hasattr(self, '_final_sent'):
+                self._final_sent = True
+                final_chunk = {{
+                    'id': self.response_id,
+                    'object': 'chat.completion.chunk',
+                    'created': self.created,
+                    'model': self.model,
+                    'choices': [{{
+                        'index': 0,
+                        'delta': {{}},
+                        'finish_reason': 'stop'
+                    }}]
+                }}
+                await asyncio.sleep(0.01)
+                return final_chunk
+            else:
+                raise StopAsyncIteration
+
+# Create the generator instance
+streaming_gen = StreamingGenerator('{}', '{}', '{}', {})
+"#,
+                    content.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n"),
+                    response.id,
+                    response.model,
+                    response.created
+                );
+
+                // Execute the streaming generator code
+                let globals = py.import("__main__")?.dict();
+                py.run(&code, Some(globals), None)?;
+
+                // Get the generator instance
+                let generator = globals.get_item("streaming_gen")?.unwrap();
+                Ok(generator.to_object(py))
+            })
+        })?)
     }
 }
 

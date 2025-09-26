@@ -422,7 +422,7 @@ class TestConfiguration:
         for i, config in enumerate(configs):
             assert config is not None
             assert config.backend_url == "http://127.0.0.1:3000"
-            print(f"Config {i + 1}: {config.backend_type} - {config.model_id}")
+            print(f"Config {i + 1}: {config.model_id}")
     
     def test_config_validation(self):
         """Test configuration parameter validation."""

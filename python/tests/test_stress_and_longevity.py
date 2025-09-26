@@ -67,7 +67,7 @@ class TestStressAndLongevity:
         # Create 10,000 configurations
         for i in range(10000):
             config = nexus_nitro_llm.PyConfig(
-                lightllm_url=f"http://host{i % 100}.example.com:{8000 + i % 1000}",
+                backend_url=f"http://host{i % 100}.example.com:{8000 + i % 1000}",
                 model_id=f"model-{i % 20}",
                 port=3000 + (i % 5000)
             )
@@ -90,7 +90,7 @@ class TestStressAndLongevity:
         for i, config in enumerate([configs[0], configs[5000], configs[-1]]):
             expected_url = f"http://host{i % 100 if i < len(configs) else (len(configs)-1) % 100}.example.com:{8000 + i % 1000 if i < len(configs) else (len(configs)-1) % 1000}"
             # Just check that config is accessible
-            assert config.lightllm_url is not None
+            assert config.backend_url is not None
             assert config.model_id is not None
 
         # Performance assertions
@@ -113,14 +113,14 @@ class TestStressAndLongevity:
 
             try:
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://worker{thread_id}.local:8000",
+                    backend_url=f"http://worker{thread_id}.local:8000",
                     model_id=f"worker-model-{thread_id}"
                 )
 
                 # Create multiple clients per thread
                 clients = []
                 for i in range(20):
-                    client = nexus_nitro_llm.PyLightLLMClient(config)
+                    client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                     clients.append(client)
                     thread_results['clients_created'] += 1
 
@@ -193,10 +193,10 @@ class TestStressAndLongevity:
             # Create and destroy many objects
             for i in range(1000):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://temp{i}.local:8000",
+                    backend_url=f"http://temp{i}.local:8000",
                     model_id=f"temp-{i}"
                 )
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
 
                 # Use the objects
                 stats = client.get_stats()
@@ -234,10 +234,10 @@ class TestStressAndLongevity:
 
         # Create persistent objects
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://localhost:8000",
+            backend_url="http://localhost:8000",
             model_id="stability-test"
         )
-        client = nexus_nitro_llm.PyLightLLMClient(config)
+        client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
         streaming_client = nexus_nitro_llm.PyStreamingClient(config)
 
         start_time = time.time()
@@ -302,7 +302,7 @@ class TestStressAndLongevity:
 
         # Shared resources
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://shared.local:8000",
+            backend_url="http://shared.local:8000",
             model_id="thread-safety-test"
         )
 
@@ -316,7 +316,7 @@ class TestStressAndLongevity:
                 barrier.wait()
 
                 # Create client (this should be thread-safe)
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
 
                 operations = 0
                 errors = []
@@ -400,10 +400,10 @@ class TestStressAndLongevity:
             # Create many objects
             for i in range(100):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://cleanup{i}.test:8000",
+                    backend_url=f"http://cleanup{i}.test:8000",
                     model_id=f"cleanup-{i}"
                 )
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                 messages = [
                     nexus_nitro_llm.create_message("user", f"Cleanup test {cycle}-{i}")
                     for _ in range(5)

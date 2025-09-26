@@ -102,7 +102,7 @@ class TestPerformanceRegression:
             configs = []
             for i in range(count):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://perf-test-{i % 100}.local:8000",
+                    backend_url=f"http://perf-test-{i % 100}.local:8000",
                     model_id=f"perf-model-{i % 20}",
                     port=3000 + (i % 1000)
                 )
@@ -157,10 +157,10 @@ class TestPerformanceRegression:
             clients = []
             for i in range(count):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://client-perf-{i}.local:8000",
+                    backend_url=f"http://client-perf-{i}.local:8000",
                     model_id=f"client-model-{i}"
                 )
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                 clients.append(client)
             return clients
 
@@ -183,10 +183,10 @@ class TestPerformanceRegression:
 
         # Pre-create client
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://stats-test.local:8000",
+            backend_url="http://stats-test.local:8000",
             model_id="stats-model"
         )
-        client = nexus_nitro_llm.PyLightLLMClient(config)
+        client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
 
         def get_stats_repeatedly(count: int) -> List:
             stats_list = []
@@ -228,7 +228,7 @@ class TestPerformanceRegression:
                 # Create config (20% of operations)
                 if i % 5 == 0:
                     config = nexus_nitro_llm.PyConfig(
-                        lightllm_url=f"http://mixed-{i}.local:8000",
+                        backend_url=f"http://mixed-{i}.local:8000",
                         model_id=f"mixed-{i}"
                     )
                     configs.append(config)
@@ -236,7 +236,7 @@ class TestPerformanceRegression:
 
                     # Create client from config (10% of operations)
                     if i % 10 == 0:
-                        client = nexus_nitro_llm.PyLightLLMClient(config)
+                        client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                         clients.append(client)
                         results['clients'] += 1
 
@@ -280,7 +280,7 @@ class TestPerformanceRegression:
         print("\n📈 Testing memory efficiency over time...")
 
         config = nexus_nitro_llm.PyConfig(
-            lightllm_url="http://memory-test.local:8000",
+            backend_url="http://memory-test.local:8000",
             model_id="memory-model"
         )
 
@@ -296,7 +296,7 @@ class TestPerformanceRegression:
                 # Mix of operations
                 if i % 10 == 0:
                     # Create and immediately use client
-                    client = nexus_nitro_llm.PyLightLLMClient(config)
+                    client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                     stats = client.get_stats()
                     operations_count += 2
                 else:
@@ -346,7 +346,7 @@ class TestPerformanceRegression:
             configs = []
             for i in range(batch_size):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://batch-{i}.local:8000",
+                    backend_url=f"http://batch-{i}.local:8000",
                     model_id=f"batch-model-{i % 50}"  # Reduce variety for realism
                 )
                 configs.append(config)
@@ -354,7 +354,7 @@ class TestPerformanceRegression:
             # Create clients from configs
             clients = []
             for i, config in enumerate(configs[:min(50, batch_size)]):  # Limit clients
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                 clients.append(client)
 
             # Create many messages
@@ -411,7 +411,7 @@ class TestPerformanceRegression:
             configs = []
             for i in range(count // 10):
                 config = nexus_nitro_llm.PyConfig(
-                    lightllm_url=f"http://consistency-{i}.local:8000",
+                    backend_url=f"http://consistency-{i}.local:8000",
                     model_id=f"consistency-{i}"
                 )
                 configs.append(config)
@@ -424,7 +424,7 @@ class TestPerformanceRegression:
 
             # Create some clients and get stats
             for config in configs[:min(5, len(configs))]:
-                client = nexus_nitro_llm.PyLightLLMClient(config)
+                client = nexus_nitro_llm.PyNexusNitroLLMClient(config)
                 stats = client.get_stats()
                 operations += 2
 
