@@ -1,0 +1,81 @@
+{
+  "name": "nexus-nitro-llm",
+  "version": "0.1.0",
+  "description": "NexusNitroLLM (nnLLM) - Universal LLM integration library with high-performance Node.js bindings",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "build:bench": "napi build --platform --release --features nodejs",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "bench": "node benchmarks/performance.js",
+    "universal": "napi universal",
+    "version": "napi version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexusnitro/nexus-nitro-llm.git"
+  },
+  "keywords": [
+    "llm",
+    "openai",
+    "lightllm",
+    "vllm",
+    "azure",
+    "aws",
+    "rust",
+    "nodejs",
+    "high-performance",
+    "zero-copy",
+    "bindings",
+    "nexus",
+    "nitro",
+    "universal"
+  ],
+  "author": "NexusNitroLLM Team",
+  "license": "MIT OR Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/nexusnitro/nexus-nitro-llm/issues"
+  },
+  "homepage": "https://github.com/nexusnitro/nexus-nitro-llm#readme",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "*.node"
+  ],
+  "napi": {
+    "binaryName": "nexus_nitro_llm",
+    "targets": [
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.2.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "typescript": "^5.0.0"
+  },
+  "optionalDependencies": {
+    "@nexus-nitro-llm/darwin-arm64": "0.1.0",
+    "@nexus-nitro-llm/darwin-x64": "0.1.0",
+    "@nexus-nitro-llm/linux-arm64-gnu": "0.1.0",
+    "@nexus-nitro-llm/linux-x64-gnu": "0.1.0",
+    "@nexus-nitro-llm/win32-arm64-msvc": "0.1.0",
+    "@nexus-nitro-llm/win32-x64-msvc": "0.1.0"
+  },
+  "engines": {
+    "node": ">= 16"
+  }
+}

@@ -1,0 +1,192 @@
+[package]
+name = "nexus_nitro_llm"
+version = "0.1.0"
+edition = "2021"
+authors = ["NexusNitroLLM Team"]
+description = "NexusNitroLLM (nnLLM) - A high-performance Rust library for seamless LLM integration with OpenAI-compatible APIs, supporting LightLLM, vLLM, and cloud providers"
+keywords = ["llm", "openai", "lightllm", "vllm", "azure", "aws", "async", "nexus", "nitro"]
+categories = ["web-programming", "asynchronous", "api-bindings", "artificial-intelligence"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexusnitro/nexus-nitro-llm"
+homepage = "https://github.com/nexusnitro/nexus-nitro-llm"
+documentation = "https://docs.rs/nexus_nitro_llm"
+readme = "README.md"
+include = [
+    "src/**/*",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE*",
+]
+
+# CRITICAL: Production optimization settings
+[profile.release]
+# Maximum optimization for size and speed
+opt-level = "z"  # Optimize for size (good for FFI bindings)
+lto = true       # Link-time optimization
+codegen-units = 1 # Single codegen unit for better optimization
+panic = "abort"  # Abort on panic (required for FFI safety)
+strip = true     # Remove debug symbols
+
+# Development profile for faster builds
+[profile.dev]
+opt-level = 0
+debug = true
+panic = "unwind" # Allow unwinding in dev for better debugging
+
+# Test profile
+[profile.test]
+opt-level = 1
+debug = true
+
+[[bin]]
+name = "nnllm"
+path = "src/main.rs"
+required-features = ["server", "cli"]
+
+[[test]]
+name = "integration_tests"
+path = "tests/integration_tests.rs"
+required-features = ["server", "streaming"]
+
+[[test]]
+name = "proxy_functionality_tests"
+path = "tests/proxy_functionality_tests.rs"
+required-features = ["server", "streaming"]
+
+[[test]]
+name = "rust_native_mockoon_tests"
+path = "tests/rust_native_mockoon_tests.rs"
+required-features = ["server", "streaming"]
+
+[[test]]
+name = "loopback_mockoon_tests"
+path = "tests/loopback_mockoon_tests.rs"
+required-features = ["server", "streaming"]
+
+
+[features]
+# Default features for most users
+default = ["server", "streaming", "tools", "caching", "metrics", "cli"]
+
+# Core server functionality
+server = ["axum", "tower", "tower-http", "tokio"]
+cli = ["clap", "dotenv", "tracing-subscriber"]
+
+# Streaming capabilities
+streaming = ["streaming-sse", "streaming-adapters"]
+streaming-sse = []
+streaming-adapters = []
+
+# Tool calling and function support
+tools = ["tool-registry", "tool-execution", "tool-validation"]
+tool-registry = []
+tool-execution = []
+tool-validation = []
+
+# Performance and optimization
+caching = ["sha2", "dashmap"]
+batching = []
+load-balancing = []
+connection-pooling = []
+
+# Monitoring and observability
+metrics = ["chrono"]
+logging = ["tracing-subscriber"]
+health-checks = []
+
+# Rate limiting
+rate-limiting = []
+distributed-rate-limiting = ["rate-limiting"]
+
+# Enhanced adapter features
+adapter-lightllm = []
+adapter-openai = []
+adapter-vllm = []
+adapter-azure = []
+adapter-custom = []
+
+# Language bindings
+python = ["pyo3", "pyo3-asyncio", "tokio"]
+nodejs = ["napi", "napi-derive", "tokio"]
+
+# Future integrations
+redis = []
+prometheus = []
+
+# Python extension module
+[lib]
+name = "nexus_nitro_llm"
+crate-type = ["cdylib", "rlib"]  # Support both Python extension and Rust library
+
+[dependencies]
+# Core dependencies (always required)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-trait = "0.1"
+thiserror = "1.0"
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "gzip", "brotli"] }
+tracing = "0.1"
+bytes = "1.0"
+futures-util = "0.3"
+tokio-stream = "0.1"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+url = "2.4"   # For URL validation
+
+# Server dependencies (optional)
+axum = { version = "0.8", optional = true }
+tokio = { version = "1.40", features = ["full"], optional = true }
+tower = { version = "0.5", optional = true }
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip", "compression-br"], optional = true }
+
+# CLI dependencies (optional)
+clap = { version = "4.5", features = ["derive", "env"], optional = true }
+dotenv = { version = "0.15", optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+
+# Enhanced features (optional)
+chrono = { version = "0.4", features = ["serde"], optional = true }
+dashmap = { version = "5.5", optional = true }  # Concurrent HashMap for high-performance caching
+sha2 = { version = "0.10", optional = true }  # For cache key generation
+fastrand = "2.0"  # For random number generation in load balancing
+
+# Python bindings (optional)
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
+pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"], optional = true }
+
+# Node.js bindings (napi-rs - highest performance option)
+napi = { version = "3.2", optional = true }
+napi-derive = { version = "3.2", optional = true }
+
+# Rate limiting (Redis support optional)
+# redis = { version = "0.24", features = ["tokio-comp", "connection-manager"], optional = true }
+
+[[example]]
+name = "basic_server"
+required-features = ["server", "cli"]
+
+[[example]]
+name = "custom_client"
+required-features = []
+
+[[example]]
+name = "with_metrics"
+required-features = ["server", "metrics", "cli"]
+
+[[bench]]
+name = "rust_benchmark"
+path = "benches/rust_benchmark.rs"
+required-features = []
+
+[[bench]]
+name = "rust_streaming_benchmark"
+path = "benches/rust_streaming_benchmark.rs"
+required-features = []
+
+[dev-dependencies]
+tokio-test = "0.4"
+wiremock = "0.6"
+futures = "0.3"
+futures-util = "0.3"
+hdrhistogram = "7"
+serde_json = "1"
+

@@ -1,0 +1,330 @@
+use nexus_nitro_llm::{
+    function_calling::{FunctionExecutor, FunctionCallingHandler, FunctionRegistry, FunctionCallingError},
+    schemas::FunctionDefinition,
+};
+use serde_json::{json, Value};
+use chrono::{DateTime, Utc};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Custom function executor for date/time operations
+#[derive(Clone)]
+pub struct DateTimeExecutor;
+
+#[async_trait::async_trait]
+impl FunctionExecutor for DateTimeExecutor {
+    async fn execute(&self, function_name: &str, arguments: &Value) -> Result<String, FunctionCallingError> {
+        match function_name {
+            "get_current_time" => {
+                let timezone = arguments.get("timezone")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("UTC");
+                
+                let now = Utc::now();
+                
+                let result = json!({
+                    "timestamp": now.timestamp(),
+                    "datetime": now.format("%Y-%m-%d %H:%M:%S").to_string(),
+                    "timezone": timezone,
+                    "iso8601": now.to_rfc3339()
+                });
+                
+                Ok(result.to_string())
+            }
+            
+            "get_timezone_info" => {
+                let timezone = arguments.get("timezone")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("UTC");
+                
+                let now = Utc::now();
+                
+                let result = json!({
+                    "timezone": timezone,
+                    "offset": now.format("%z").to_string(),
+                    "name": now.format("%Z").to_string(),
+                    "is_dst": now.format("%Z").to_string().contains("DT")
+                });
+                
+                Ok(result.to_string())
+            }
+            
+            "format_timestamp" => {
+                let timestamp = arguments.get("timestamp")
+                    .and_then(|v| v.as_i64())
+                    .ok_or_else(|| FunctionCallingError::InvalidArguments {
+                        message: "Missing or invalid timestamp".to_string(),
+                    })?;
+                
+                let format = arguments.get("format")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("%Y-%m-%d %H:%M:%S");
+                
+                let _timezone = arguments.get("timezone")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("UTC");
+                
+                let dt = DateTime::from_timestamp(timestamp, 0)
+                    .map(|dt| dt.with_timezone(&Utc));
+                
+                match dt {
+                    Some(dt) => {
+                        let result = json!({
+                            "formatted": dt.format(format).to_string(),
+                            "iso8601": dt.to_rfc3339(),
+                            "timestamp": timestamp
+                        });
+                        Ok(result.to_string())
+                    },
+                    None => Err(FunctionCallingError::InvalidArguments {
+                        message: "Invalid timestamp".to_string(),
+                    })
+                }
+            }
+            
+            _ => Err(FunctionCallingError::FunctionNotFound {
+                name: function_name.to_string(),
+            })
+        }
+    }
+    
+    fn get_definition(&self) -> FunctionDefinition {
+        FunctionDefinition {
+            name: "datetime_functions".to_string(),
+            description: Some("Date and time utility functions".to_string()),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "function": {
+                        "type": "string",
+                        "enum": ["get_current_time", "get_timezone_info", "format_timestamp"],
+                        "description": "The specific datetime function to execute"
+                    }
+                },
+                "required": ["function"]
+            })),
+        }
+    }
+}
+
+/// Custom function executor for emergency services
+#[derive(Clone)]
+pub struct EmergencyServicesExecutor;
+
+#[async_trait::async_trait]
+impl FunctionExecutor for EmergencyServicesExecutor {
+    async fn execute(&self, function_name: &str, arguments: &Value) -> Result<String, FunctionCallingError> {
+        match function_name {
+            "contact_emergency_services" => {
+                let emergency_type = arguments.get("emergency_type")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("general");
+                
+                let location = arguments.get("location")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown");
+                
+                let description = arguments.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                
+                // In a real implementation, this would integrate with actual emergency services
+                // For demo purposes, we'll simulate the response
+                let response = match emergency_type {
+                    "medical" => "Medical emergency services have been contacted. Please stay on the line for further instructions.",
+                    "fire" => "Fire department has been notified. Please evacuate the area if safe to do so.",
+                    "police" => "Police services have been contacted. Please provide your exact location when they arrive.",
+                    "general" => "Emergency services have been contacted. Please stay calm and follow their instructions.",
+                    _ => "Emergency services have been contacted. Please provide more details about the emergency type."
+                };
+                
+                let result = json!({
+                    "status": "contacted",
+                    "emergency_type": emergency_type,
+                    "location": location,
+                    "description": description,
+                    "response": response,
+                    "timestamp": SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+                    "note": "This is a demo implementation. In production, integrate with real emergency services APIs."
+                });
+                Ok(result.to_string())
+            }
+            
+            "get_emergency_contacts" => {
+                let location = arguments.get("location")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("general");
+                
+                // Simulate location-specific emergency contacts
+                let contacts = match location {
+                    "us" | "usa" | "united states" => json!({
+                        "police": "911",
+                        "fire": "911", 
+                        "medical": "911",
+                        "poison_control": "1-800-222-1222",
+                        "suicide_prevention": "988"
+                    }),
+                    "uk" | "united kingdom" => json!({
+                        "police": "999",
+                        "fire": "999",
+                        "medical": "999",
+                        "non_emergency": "101",
+                        "suicide_prevention": "116 123"
+                    }),
+                    "eu" | "europe" => json!({
+                        "emergency": "112",
+                        "note": "112 is the universal emergency number in the EU"
+                    }),
+                    _ => json!({
+                        "note": "Please check your local emergency numbers",
+                        "international_emergency": "112 or 911 may work in many countries"
+                    })
+                };
+                
+                let result = json!({
+                    "location": location,
+                    "contacts": contacts,
+                    "timestamp": SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+                });
+                Ok(result.to_string())
+            }
+            
+            "check_emergency_status" => {
+                let incident_id = arguments.get("incident_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown");
+                
+                // Simulate checking emergency response status
+                let result = json!({
+                    "incident_id": incident_id,
+                    "status": "in_progress",
+                    "estimated_arrival": "5-10 minutes",
+                    "responders": ["police", "medical"],
+                    "last_updated": SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+                    "note": "This is a demo implementation. Real status would come from emergency services API."
+                });
+                Ok(result.to_string())
+            }
+            
+            _ => Err(FunctionCallingError::FunctionNotFound {
+                name: function_name.to_string(),
+            })
+        }
+    }
+    
+    fn get_definition(&self) -> FunctionDefinition {
+        FunctionDefinition {
+            name: "emergency_services".to_string(),
+            description: Some("Emergency services and contact functions".to_string()),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "function": {
+                        "type": "string",
+                        "enum": ["contact_emergency_services", "get_emergency_contacts", "check_emergency_status"],
+                        "description": "The specific emergency function to execute"
+                    }
+                },
+                "required": ["function"]
+            })),
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("🕐 Date/Time and Emergency Services Function Calling Demo");
+    println!("=====================================================");
+    
+    // Create custom function registry with date/time and emergency functions
+    let mut registry = FunctionRegistry::new();
+    
+    // Register custom function executors
+    registry.register_function(std::sync::Arc::new(DateTimeExecutor));
+    registry.register_function(std::sync::Arc::new(EmergencyServicesExecutor));
+    
+    // Create function calling handler
+    let function_handler = FunctionCallingHandler::new(std::sync::Arc::new(registry));
+    
+    // Test date/time functions directly
+    println!("\n🕐 Testing Date/Time Functions:");
+    println!("-------------------------------");
+    
+    let datetime_executor = DateTimeExecutor;
+    
+    // Test get_current_time
+    let time_result = datetime_executor.execute(
+        "get_current_time",
+        &json!({"timezone": "local"})
+    ).await;
+    println!("Current time (local): {:?}", time_result);
+    
+    let utc_result = datetime_executor.execute(
+        "get_current_time", 
+        &json!({"timezone": "UTC"})
+    ).await;
+    println!("Current time (UTC): {:?}", utc_result);
+    
+    // Test timezone info
+    let tz_info = datetime_executor.execute(
+        "get_timezone_info",
+        &json!({"timezone": "local"})
+    ).await;
+    println!("Timezone info: {:?}", tz_info);
+    
+    // Test timestamp formatting
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let formatted = datetime_executor.execute(
+        "format_timestamp",
+        &json!({
+            "timestamp": now,
+            "format": "%A, %B %d, %Y at %I:%M %p",
+            "timezone": "local"
+        })
+    ).await;
+    println!("Formatted timestamp: {:?}", formatted);
+    
+    // Test emergency services functions
+    println!("\n🚨 Testing Emergency Services Functions:");
+    println!("---------------------------------------");
+    
+    let emergency_executor = EmergencyServicesExecutor;
+    
+    // Test emergency contacts
+    let contacts = emergency_executor.execute(
+        "get_emergency_contacts",
+        &json!({"location": "us"})
+    ).await;
+    println!("US Emergency contacts: {:?}", contacts);
+    
+    // Test emergency contact (demo only - not real)
+    let emergency = emergency_executor.execute(
+        "contact_emergency_services",
+        &json!({
+            "emergency_type": "medical",
+            "location": "123 Main St, Demo City",
+            "description": "Demo emergency - not real"
+        })
+    ).await;
+    println!("Emergency contact result: {:?}", emergency);
+    
+    // Test status check
+    let status = emergency_executor.execute(
+        "check_emergency_status",
+        &json!({"incident_id": "demo-123"})
+    ).await;
+    println!("Emergency status: {:?}", status);
+    
+    // Show available tools
+    println!("\n🔧 Available Tools:");
+    println!("------------------");
+    let tools = function_handler.get_tools();
+    for tool in tools {
+        println!("- {}: {:?}", tool.function.name, tool.function.description);
+    }
+    
+    println!("\n✅ Date/Time and Emergency Services function calling demo completed!");
+    println!("\n📝 Note: Emergency services functions are for demonstration only.");
+    println!("   In production, integrate with real emergency services APIs.");
+    
+    Ok(())
+}

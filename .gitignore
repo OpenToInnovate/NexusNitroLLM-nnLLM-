@@ -1,0 +1,474 @@
+# Rust Build Artifacts
+# =====================
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo Lock File (uncomment for applications, keep for libraries)
+# Cargo.lock
+
+# Rust Documentation
+# ==================
+/doc/
+/target/doc/
+
+# IDE and Editor Files
+# ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Vim
+*.swp
+*.swo
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim/Neovim
+.vim/
+*.swp
+*.swo
+*~
+.netrwhist
+.nvim/
+
+# Logs and Temporary Files
+# ========================
+*.log
+*.tmp
+*.temp
+/tmp/
+/temp/
+*.pid
+*.seed
+*.pid.lock
+
+# Environment Variables and Secrets
+# =================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+.env.staging
+.env.development
+*.env
+!env.example
+secrets.toml
+config/secrets.toml
+
+# Virtual Keys and Tokens
+.virtual_key
+*.token
+*.key
+api_keys.txt
+tokens.txt
+virtual_keys.txt
+
+# Node.js Dependencies (for examples)
+# ===================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# Python (if any Python scripts are added)
+# =========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+
+# Test Artifacts and Coverage
+# ============================
+coverage/
+*.lcov
+tarpaulin-report.html
+tarpaulin-report.xml
+/target/coverage/
+/target/llvm-cov-target/
+
+# Benchmark Results
+# =================
+benchmark-results/
+*.bench
+/target/criterion/
+
+# Profiling Data
+# ==============
+*.prof
+perf.data*
+callgrind.out.*
+cachegrind.out.*
+massif.out.*
+
+# Docker
+# ======
+Dockerfile.local
+docker-compose.override.yml
+.dockerignore
+
+# Kubernetes
+# ==========
+*.kubeconfig
+k8s-secrets/
+
+# Database Files
+# ==============
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Redis Dump Files
+# ================
+dump.rdb
+*.rdb
+
+# SSL/TLS Certificates
+# ====================
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+ssl/
+certs/
+
+# Backup Files
+# ============
+*.bak
+*.backup
+*.old
+*.orig
+
+# OS Generated Files
+# ==================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+# =======
+*.lnk
+
+# Linux
+# =====
+*~
+
+# Project Specific
+# ================
+
+# Test Server Processes
+test_server.pid
+proxy_server.pid
+
+# Configuration Overrides
+config/local.toml
+config/development.toml
+config/production.toml
+
+# Cache Directories
+.cache/
+cache/
+/target/cache/
+
+# Metrics and Monitoring
+# ======================
+metrics/
+monitoring/
+grafana/
+prometheus/
+
+# Load Testing Results
+# ====================
+load-test-results/
+stress-test-results/
+performance-results/
+
+# API Keys and Tokens (additional patterns)
+# =========================================
+*.key
+*.token
+api_keys.txt
+tokens.txt
+virtual_keys.txt
+
+# Development Scripts Output
+# ==========================
+scripts/output/
+scripts/logs/
+scripts/tmp/
+
+# Wiremock Test Server
+# ====================
+wiremock/
+mock-server/
+
+# LightLLM Specific
+# =================
+lightllm-cache/
+model-cache/
+*.model
+*.bin
+*.safetensors
+
+# Streaming Test Output
+# =====================
+streaming-output/
+sse-logs/
+stream-logs/
+
+# Performance Test Artifacts
+# ==========================
+perf-logs/
+benchmark-logs/
+latency-reports/
+throughput-reports/
+
+# Memory Profiling
+# ================
+*.heapsnapshot
+*.heap
+memprof/
+
+# Network Testing
+# ===============
+network-logs/
+connection-logs/
+pool-logs/
+
+# Error Logs and Debugging
+# =========================
+error-logs/
+debug-logs/
+panic-logs/
+crash-dumps/
+
+# Temporary Test Files
+# ====================
+test-*.tmp
+temp-*.log
+*.test-output
+
+# Build Scripts Output
+# ====================
+build-logs/
+compile-logs/
+rustc-logs/
+
+# Documentation Build
+# ===================
+site/
+book/
+mdbook/
+
+# Rust Analyzer
+# =============
+.rust-analyzer/
+
+# Clippy Cache
+# ============
+.clippy-cache/
+
+# Rustfmt Cache
+# =============
+.rustfmt_cache/
+
+# Cargo Registry Cache (if using local registry)
+# ==============================================
+.cargo/registry/
+.cargo/git/
+
+# Local Development
+# =================
+local/
+dev/
+development/
+*.local
+
+# Production Deployment
+# =====================
+deploy/
+deployment/
+production/
+*.prod
+
+# Monitoring and Observability
+# =============================
+jaeger/
+zipkin/
+tracing/
+spans/
+traces/
+
+# Rate Limiting State
+# ===================
+rate-limit-state/
+token-buckets/
+redis-dumps/
+
+# Connection Pool State
+# =====================
+connection-pools/
+pool-state/
+connections/
+
+# Streaming State
+# ===============
+streaming-state/
+sse-state/
+chunk-cache/
+
+# Batching State
+# ==============
+batch-state/
+batch-cache/
+batches/
+
+# Caching State
+# =============
+cache-state/
+cache-dumps/
+cache-backups/
+
+# Routing State
+# =============
+routing-state/
+route-cache/
+endpoints/
+
+# Metrics Collection
+# ==================
+metrics-collection/
+metric-dumps/
+stats/
+
+# Health Check Files
+# ==================
+health/
+health-checks/
+status/
+
+# API Documentation
+# =================
+api-docs/
+openapi/
+swagger/
+
+# Integration Test Artifacts
+# ==========================
+integration-logs/
+test-artifacts/
+mock-responses/
+
+# Stress Test Results
+# ===================
+stress-results/
+load-results/
+concurrency-logs/
+
+# Performance Benchmark Results
+# =============================
+benchmark-data/
+perf-data/
+timing-results/
+
+# Memory Usage Reports
+# ====================
+memory-reports/
+heap-analysis/
+leak-reports/
+
+# Network Analysis
+# ================
+network-analysis/
+connection-analysis/
+latency-analysis/
+
+# Error Analysis
+# ==============
+error-analysis/
+failure-analysis/
+crash-analysis/
+
+# Security Scans
+# ==============
+security-scans/
+vulnerability-reports/
+audit-logs/
+
+# Compliance and Auditing
+# =======================
+compliance-logs/
+audit-trails/
+access-logs/
+
+# Backup and Recovery
+# ===================
+backups/
+recovery/
+snapshots/
+
+# Archive and Compression
+# =======================
+*.tar.gz
+*.zip
+*.rar
+*.7z
+*.bz2
+*.xz
+
+# Large Files (should be in Git LFS if needed)
+# ============================================
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib

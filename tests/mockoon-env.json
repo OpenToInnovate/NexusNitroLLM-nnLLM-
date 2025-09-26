@@ -1,0 +1,1113 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mockoon/mockoon/main/packages/cli/dist/schemas/mockoon-schemas.json",
+  "version": "2.0.0",
+  "data": {
+    "id": "nexus-nitro-llm-tests",
+    "name": "NexusNitroLLM Test Environment",
+    "description": "Mock OpenAI-compatible API for testing NexusNitroLLM proxy functionality",
+    "version": "1.0.0",
+    "lastMigration": 25,
+    "folders": [
+      {
+        "id": "chat-completions",
+        "name": "Chat Completions",
+        "children": ["chat-completions-success", "chat-completions-streaming", "chat-completions-error"]
+      }
+    ],
+    "routes": [
+      {
+        "id": "health-check",
+        "name": "Health Check",
+        "documentation": "Simple health check endpoint",
+        "method": "GET",
+        "endpoint": "/health",
+        "responses": [
+          {
+            "id": "health-ok",
+            "name": "OK",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"{{faker 'date.recent'}}\",\n  \"version\": \"1.0.0\"\n}",
+            "latency": 10
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-200",
+        "name": "Chat Completions - 200 JSON Happy Path",
+        "documentation": "Successful chat completion response with JSON",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "chat-success-200",
+            "name": "Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "req_{{faker 'string.alphanumeric' 8}}"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-{{faker 'string.alphanumeric' 8}}\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"{{faker 'helpers.arrayElement' (array 'gpt-3.5-turbo' 'gpt-4' 'gpt-4-turbo-preview')}}\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"Hello! I'm a mock AI assistant. How can I help you today?\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": {{faker 'number.int' (object 'min' 10 'max' 100)}},\n    \"completion_tokens\": {{faker 'number.int' (object 'min' 5 'max' 50)}},\n    \"total_tokens\": {{faker 'number.int' (object 'min' 15 'max' 150)}}\n  }\n}",
+            "latency": 150
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-streaming",
+        "name": "Chat Completions - Streaming",
+        "documentation": "Streaming chat completion response with per-chunk latency",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "chat-streaming-200",
+            "name": "Streaming Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "text/event-stream"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              },
+              {
+                "key": "Connection",
+                "value": "keep-alive"
+              }
+            ],
+            "body": ": ping\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"role\":\"assistant\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"Hel\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"lo\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"!\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\" How\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\" can\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\" I\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\" help\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\" you\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"?\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\",\"index\":0}],\"model\":\"test-model\"}\n\ndata: [DONE]\n\n",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "stream",
+            "value": "true",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-streaming-with-tools",
+        "name": "Chat Completions - Streaming with Tools",
+        "documentation": "Streaming response with tool calls",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "chat-streaming-tools-200",
+            "name": "Streaming with Tools",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "text/event-stream"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              },
+              {
+                "key": "Connection",
+                "value": "keep-alive"
+              }
+            ],
+            "body": ": ping\n\ndata: {\"id\":\"chatcmpl_tools\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"role\":\"assistant\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_tools\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"I'll \"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_tools\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"call \"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_tools\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_123\",\"type\":\"function\",\"function\":{\"name\":\"get_weather\",\"arguments\":\"{\\\"location\\\": \\\"New York\\\"}\"}}]},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_tools\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"tool_calls\",\"index\":0}],\"model\":\"test-model\"}\n\ndata: [DONE]\n\n",
+            "latency": 150
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "stream",
+            "value": "true",
+            "invert": false
+          },
+          {
+            "target": "body",
+            "modifier": "tools",
+            "value": "true",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-utf8-streaming",
+        "name": "Chat Completions - UTF-8 Streaming",
+        "documentation": "Streaming with UTF-8 multi-byte characters split across chunks",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "chat-streaming-utf8-200",
+            "name": "UTF-8 Streaming",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "text/event-stream"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              },
+              {
+                "key": "Connection",
+                "value": "keep-alive"
+              }
+            ],
+            "body": ": ping\n\ndata: {\"id\":\"chatcmpl_utf8\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"role\":\"assistant\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_utf8\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_utf8\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"世界\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_utf8\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"🌍\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_utf8\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"!\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl_utf8\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\",\"index\":0}],\"model\":\"test-model\"}\n\ndata: [DONE]\n\n",
+            "latency": 120
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "stream",
+            "value": "true",
+            "invert": false
+          },
+          {
+            "target": "body",
+            "modifier": "utf8_test",
+            "value": "true",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-error",
+        "name": "Chat Completions - Error",
+        "documentation": "Error responses for testing error handling",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "chat-error-400",
+            "name": "Bad Request",
+            "statusCode": 400,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Invalid request: missing required field 'messages'\",\n    \"type\": \"invalid_request_error\",\n    \"param\": \"messages\",\n    \"code\": \"missing_required_field\"\n  }\n}",
+            "latency": 50
+          },
+          {
+            "id": "chat-error-401",
+            "name": "Unauthorized",
+            "statusCode": 401,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Invalid API key provided\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"invalid_api_key\"\n  }\n}",
+            "latency": 50
+          },
+          {
+            "id": "chat-error-429",
+            "name": "Rate Limited",
+            "statusCode": 429,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Retry-After",
+                "value": "60"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Rate limit exceeded\",\n    \"type\": \"rate_limit_error\",\n    \"code\": \"rate_limit_exceeded\"\n  }\n}",
+            "latency": 50
+          },
+          {
+            "id": "chat-error-500",
+            "name": "Internal Server Error",
+            "statusCode": 500,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Internal server error\",\n    \"type\": \"internal_error\",\n    \"code\": \"server_error\"\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "messages",
+            "value": "[]",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-timeout",
+        "name": "Chat Completions - Timeout",
+        "documentation": "Slow response to test timeout handling",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "chat-timeout-200",
+            "name": "Slow Response",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-{{faker 'string.alphanumeric' 8}}\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"gpt-3.5-turbo\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"This response was intentionally delayed to test timeout handling.\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 15,\n    \"total_tokens\": 25\n  }\n}",
+            "latency": 35000
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "timeout_test",
+            "value": "true",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "models-list",
+        "name": "Models List",
+        "documentation": "List available models",
+        "method": "GET",
+        "endpoint": "/v1/models",
+        "responses": [
+          {
+            "id": "models-success",
+            "name": "Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"id\": \"gpt-3.5-turbo\",\n      \"object\": \"model\",\n      \"created\": 1677610602,\n      \"owned_by\": \"openai\"\n    },\n    {\n      \"id\": \"gpt-4\",\n      \"object\": \"model\",\n      \"created\": 1687882411,\n      \"owned_by\": \"openai\"\n    },\n    {\n      \"id\": \"gpt-4-turbo-preview\",\n      \"object\": \"model\",\n      \"created\": 1698962400,\n      \"owned_by\": \"openai\"\n    }\n  ]\n}",
+            "latency": 50
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-non-json",
+        "name": "Chat Completions - Non-JSON Response",
+        "documentation": "Returns 200 with text/plain content",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "non-json-200",
+            "name": "Non-JSON Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": "This is not JSON content",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "non_json",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-malformed-json",
+        "name": "Chat Completions - Malformed JSON",
+        "documentation": "Returns 200 with broken JSON",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "malformed-json-200",
+            "name": "Malformed JSON",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\"id\": \"chatcmpl-invalid\", \"choices\": [{\"invalid\": \"json\"",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "malformed_json",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-wrong-content-type",
+        "name": "Chat Completions - Wrong Content-Type",
+        "documentation": "Returns 200 with application/octet-stream + JSON body",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "wrong-content-type-200",
+            "name": "Wrong Content-Type",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/octet-stream"
+              }
+            ],
+            "body": "{\"id\": \"chatcmpl-wrong-ct\", \"object\": \"chat.completion\", \"choices\": [{\"message\": {\"role\": \"assistant\", \"content\": \"Hello\"}}]}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "wrong_content_type",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-403",
+        "name": "Chat Completions - Forbidden",
+        "documentation": "Returns 403 Forbidden",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "forbidden-403",
+            "name": "Forbidden",
+            "statusCode": 403,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Access forbidden\",\n    \"type\": \"forbidden_error\",\n    \"code\": \"access_denied\"\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "forbidden",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-404",
+        "name": "Chat Completions - Not Found",
+        "documentation": "Returns 404 Not Found",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "not-found-404",
+            "name": "Not Found",
+            "statusCode": 404,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Model not found\",\n    \"type\": \"not_found_error\",\n    \"code\": \"model_not_found\"\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "not_found",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-502",
+        "name": "Chat Completions - Bad Gateway",
+        "documentation": "Returns 502 Bad Gateway",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "bad-gateway-502",
+            "name": "Bad Gateway",
+            "statusCode": 502,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Bad gateway\",\n    \"type\": \"server_error\",\n    \"code\": \"bad_gateway\"\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "bad_gateway",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-503",
+        "name": "Chat Completions - Service Unavailable",
+        "documentation": "Returns 503 Service Unavailable",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "service-unavailable-503",
+            "name": "Service Unavailable",
+            "statusCode": 503,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Retry-After",
+                "value": "30"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Service unavailable\",\n    \"type\": \"server_error\",\n    \"code\": \"service_unavailable\"\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "service_unavailable",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-504",
+        "name": "Chat Completions - Gateway Timeout",
+        "documentation": "Returns 504 Gateway Timeout",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "gateway-timeout-504",
+            "name": "Gateway Timeout",
+            "statusCode": 504,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Gateway timeout\",\n    \"type\": \"server_error\",\n    \"code\": \"gateway_timeout\"\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "gateway_timeout",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-gzip",
+        "name": "Chat Completions - Gzip Compressed",
+        "documentation": "Returns gzip compressed response",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "gzip-200",
+            "name": "Gzip Compressed",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Encoding",
+                "value": "gzip"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-gzip\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"gpt-3.5-turbo\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"This response is gzip compressed\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 5,\n    \"total_tokens\": 15\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "test_type",
+            "value": "gzip",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "cors-preflight",
+        "name": "CORS Preflight",
+        "documentation": "Handle CORS preflight requests",
+        "method": "OPTIONS",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "cors-success",
+            "name": "CORS Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "key": "Access-Control-Allow-Methods",
+                "value": "GET,POST,PUT,DELETE,OPTIONS"
+              },
+              {
+                "key": "Access-Control-Allow-Headers",
+                "value": "Content-Type,Authorization,X-Requested-With"
+              },
+              {
+                "key": "Access-Control-Max-Age",
+                "value": "86400"
+              }
+            ],
+            "body": "",
+            "latency": 10
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-idempotency",
+        "name": "Chat Completions - Idempotency Test",
+        "documentation": "Test idempotency with counter in response",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "idempotency-200",
+            "name": "Idempotency Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Idempotency-Counter",
+                "value": "{{faker 'number.int' (object 'min' 1 'max' 100)}}"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-idempotent\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"Idempotent response - same request returns same result\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 8,\n    \"total_tokens\": 18\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "header",
+            "modifier": "Idempotency-Key",
+            "value": "",
+            "invert": true
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-missing-api-key",
+        "name": "Chat Completions - Missing API Key",
+        "documentation": "Returns 401 for missing API key",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "missing-key-401",
+            "name": "Missing API Key",
+            "statusCode": 401,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Invalid API key provided\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"invalid_api_key\"\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "header",
+            "modifier": "Authorization",
+            "value": "",
+            "invert": true
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-expired-key",
+        "name": "Chat Completions - Expired Key",
+        "documentation": "Returns 401 for expired/revoked key",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "expired-key-401",
+            "name": "Expired Key",
+            "statusCode": 401,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"API key has been revoked\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"key_revoked\"\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "header",
+            "modifier": "Authorization",
+            "value": "Bearer expired_key",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-context-exceeded",
+        "name": "Chat Completions - Context Length Exceeded",
+        "documentation": "Returns error when context length is exceeded",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "context-exceeded-400",
+            "name": "Context Exceeded",
+            "statusCode": 400,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"Context length exceeded\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"context_length_exceeded\",\n    \"param\": \"messages\"\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "context_test",
+            "value": "exceeded",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-invalid-model",
+        "name": "Chat Completions - Invalid Model",
+        "documentation": "Returns error for invalid model",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "invalid-model-400",
+            "name": "Invalid Model",
+            "statusCode": 400,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"message\": \"The model 'invalid-model' does not exist\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"model_not_found\",\n    \"param\": \"model\"\n  }\n}",
+            "latency": 50
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "model",
+            "value": "invalid-model",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-tools",
+        "name": "Chat Completions - With Tools",
+        "documentation": "Returns response with tool calls",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "tools-200",
+            "name": "Tools Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-tools\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": null,\n        \"tool_calls\": [\n          {\n            \"id\": \"call_123\",\n            \"type\": \"function\",\n            \"function\": {\n              \"name\": \"get_weather\",\n              \"arguments\": \"{\\\"location\\\": \\\"New York\\\"}\"\n            }\n          }\n        ]\n      },\n      \"finish_reason\": \"tool_calls\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 20,\n    \"completion_tokens\": 5,\n    \"total_tokens\": 25\n  }\n}",
+            "latency": 150
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "tools",
+            "value": "true",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-json-mode",
+        "name": "Chat Completions - JSON Mode",
+        "documentation": "Returns structured JSON response",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "json-mode-200",
+            "name": "JSON Mode Success",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-json\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"{\\\"name\\\": \\\"John\\\", \\\"age\\\": 30, \\\"city\\\": \\\"New York\\\"}\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 15,\n    \"completion_tokens\": 10,\n    \"total_tokens\": 25\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "body",
+            "modifier": "response_format",
+            "value": "json_object",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-stream",
+        "name": "Chat Completions - Streaming SSE",
+        "documentation": "Streaming chat completion with Server-Sent Events",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:stream",
+        "responses": [
+          {
+            "id": "streaming-sse",
+            "name": "Streaming SSE",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "text/event-stream"
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache"
+              },
+              {
+                "key": "Connection",
+                "value": "keep-alive"
+              }
+            ],
+            "body": ": ping\n\ndata: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"Hel\"},\"index\":0}],\"model\":\"test-model\"}\n\ndata: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"lo\"},\"index\":0}]}\n\ndata: [DONE]",
+            "latency": 100
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-timeout",
+        "name": "Chat Completions - Timeout",
+        "documentation": "Slow server response to test client timeout",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:timeout",
+        "responses": [
+          {
+            "id": "timeout-response",
+            "name": "Timeout",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-timeout\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"This response took a long time...\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 5,\n    \"total_tokens\": 15\n  }\n}",
+            "latency": 35000
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-rate",
+        "name": "Chat Completions - Rate Limit",
+        "documentation": "Rate limit response with Retry-After header",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:rate",
+        "responses": [
+          {
+            "id": "rate-limit-429",
+            "name": "Rate Limited",
+            "statusCode": 429,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Retry-After",
+                "value": "2"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"type\": \"rate_limit\",\n    \"code\": \"rate_limit_exceeded\",\n    \"message\": \"Too many requests\",\n    \"request_id\": \"req-{{faker 'string.alphanumeric' 10}}\"\n  }\n}",
+            "latency": 50
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-error",
+        "name": "Chat Completions - Server Error",
+        "documentation": "Internal server error response",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:error",
+        "responses": [
+          {
+            "id": "server-error-500",
+            "name": "Server Error",
+            "statusCode": 500,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"error\": {\n    \"type\": \"internal_error\",\n    \"code\": \"internal_server_error\",\n    \"message\": \"An internal error occurred\",\n    \"request_id\": \"req-{{faker 'string.alphanumeric' 10}}\"\n  }\n}",
+            "latency": 100
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-malformed",
+        "name": "Chat Completions - Malformed JSON",
+        "documentation": "Malformed JSON response",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:malformed",
+        "responses": [
+          {
+            "id": "malformed-json",
+            "name": "Malformed JSON",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": 1,\n  \"choices\": [ }",
+            "latency": 50
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-text",
+        "name": "Chat Completions - Wrong Content-Type",
+        "documentation": "Response with wrong Content-Type header",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:text",
+        "responses": [
+          {
+            "id": "wrong-content-type",
+            "name": "Wrong Content-Type",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/octet-stream"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-wrong-type\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"Hello!\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 2,\n    \"total_tokens\": 12\n  }\n}",
+            "latency": 50
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-idempotent",
+        "name": "Chat Completions - Idempotency",
+        "documentation": "Idempotency behavior with counter",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:idempotent",
+        "responses": [
+          {
+            "id": "idempotent-response",
+            "name": "Idempotent Response",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-idempotent\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"Idempotent response #{{env 'IDEMPOTENCY_COUNTER'}}\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 3,\n    \"total_tokens\": 13\n  }\n}",
+            "latency": 100
+          }
+        ],
+        "rules": [
+          {
+            "target": "header",
+            "modifier": "idempotency-key",
+            "value": ".*",
+            "invert": false
+          }
+        ]
+      },
+      {
+        "id": "chat-completions-close",
+        "name": "Chat Completions - Connection Close",
+        "documentation": "Abrupt connection drop",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions:close",
+        "responses": [
+          {
+            "id": "connection-close",
+            "name": "Connection Close",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"id\": \"chatcmpl-close\",\n  \"object\": \"chat.completion\",\n  \"created\": {{faker 'date.unix'}},\n  \"model\": \"test-model\",\n  \"choices\": [\n    {\n      \"index\": 0,\n      \"message\": {\n        \"role\": \"assistant\",\n        \"content\": \"Connection will be dropped...\"\n      },\n      \"finish_reason\": \"stop\"\n    }\n  ],\n  \"usage\": {\n    \"prompt_tokens\": 10,\n    \"completion_tokens\": 5,\n    \"total_tokens\": 15\n  }\n}",
+            "latency": 100,
+            "rules": [
+              {
+                "target": "fault",
+                "modifier": "close_connection",
+                "value": "true",
+                "invert": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cors-preflight",
+        "name": "CORS Preflight",
+        "documentation": "CORS preflight request handling",
+        "method": "OPTIONS",
+        "endpoint": "/v1/chat/completions",
+        "responses": [
+          {
+            "id": "cors-options",
+            "name": "CORS Options",
+            "statusCode": 200,
+            "headers": [
+              {
+                "key": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "key": "Access-Control-Allow-Methods",
+                "value": "GET,POST,PUT,DELETE,OPTIONS"
+              },
+              {
+                "key": "Access-Control-Allow-Headers",
+                "value": "Content-Type,Authorization,X-Requested-With,Idempotency-Key"
+              },
+              {
+                "key": "Access-Control-Max-Age",
+                "value": "86400"
+              }
+            ],
+            "body": "",
+            "latency": 10
+          }
+        ]
+      }
+    ],
+    "cors": true,
+    "headers": [
+      {
+        "key": "Access-Control-Allow-Origin",
+        "value": "*"
+      },
+      {
+        "key": "Access-Control-Allow-Methods",
+        "value": "GET,POST,PUT,DELETE,OPTIONS"
+      },
+      {
+        "key": "Access-Control-Allow-Headers",
+        "value": "Content-Type,Authorization,X-Requested-With"
+      }
+    ],
+    "proxyMode": false,
+    "proxyRemovePrefix": false,
+    "proxyHost": "",
+    "proxyReqHeaders": [],
+    "proxyResHeaders": []
+  },
+  "settings": {
+    "port": 3000,
+    "hostname": "127.0.0.1",
+    "https": false,
+    "certPath": "",
+    "keyPath": "",
+    "cors": true,
+    "latency": 0,
+    "routes": []
+  }
+}

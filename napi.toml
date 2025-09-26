@@ -1,0 +1,16 @@
+[package]
+name = "nexus_nitro_llm"
+version = "0.1.0"
+description = "NexusNitroLLM Node.js bindings"
+
+[build]
+target = "aarch64-apple-darwin"
+triple = "aarch64-apple-darwin"
+
+[lib]
+crate-type = ["cdylib"]
+name = "nexus_nitro_llm"
+
+[target.aarch64-apple-darwin]
+linker = "cc"
+rustflags = ["-C", "link-arg=-undefined", "dynamic_lookup"]

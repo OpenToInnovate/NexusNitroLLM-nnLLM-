@@ -1,0 +1,346 @@
+#!/usr/bin/env rust
+//! # Function Calling Demo
+//! 
+//! This example demonstrates OpenAI-compatible function calling with NexusNitroLLM.
+//! It shows how to define tools, make function calls, and process the results.
+//! 
+//! ## Features Demonstrated:
+//! - Tool definitions with JSON Schema
+//! - Function execution with built-in executors
+//! - Tool choice validation
+//! - Function call processing
+//! - Error handling
+
+use nexus_nitro_llm::{
+    Config, AppState, create_router,
+    schemas::{ChatCompletionRequest, Message, Tool, ToolChoice, FunctionCall, ToolCall},
+    function_calling::{FunctionCallingHandler, FunctionRegistry, FunctionExecutor, FunctionCallingError}
+};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::Json,
+    routing::post,
+    Router
+};
+use serde_json::json;
+use std::sync::Arc;
+use async_trait::async_trait;
+
+/// # Custom Function Executor
+/// 
+/// Example of a custom function executor for getting system information.
+pub struct SystemInfoExecutor;
+
+#[async_trait]
+impl FunctionExecutor for SystemInfoExecutor {
+    async fn execute(&self, name: &str, arguments: &serde_json::Value) -> Result<String, FunctionCallingError> {
+        match name {
+            "get_system_info" => {
+                let info = json!({
+                    "os": std::env::consts::OS,
+                    "arch": std::env::consts::ARCH,
+                    "family": std::env::consts::FAMILY,
+                    "rust_version": env!("CARGO_PKG_VERSION"),
+                    "nexus_nitro_llm_version": env!("CARGO_PKG_VERSION")
+                });
+                Ok(info.to_string())
+            }
+            "get_environment_variable" => {
+                let var_name = arguments["name"].as_str()
+                    .ok_or_else(|| FunctionCallingError::InvalidArguments {
+                        message: "Missing 'name' parameter".to_string(),
+                    })?;
+                
+                let value = std::env::var(var_name)
+                    .map_err(|_| FunctionCallingError::ExecutionFailed {
+                        message: format!("Environment variable '{}' not found", var_name),
+                    })?;
+                
+                Ok(json!({"name": var_name, "value": value}).to_string())
+            }
+            _ => Err(FunctionCallingError::FunctionNotFound {
+                name: name.to_string(),
+            }),
+        }
+    }
+    
+    fn get_definition(&self) -> crate::schemas::FunctionDefinition {
+        crate::schemas::FunctionDefinition {
+            name: "get_system_info".to_string(),
+            description: Some("Get system information including OS, architecture, and version details".to_string()),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "include_version": {
+                        "type": "boolean",
+                        "description": "Whether to include version information"
+                    }
+                }
+            })),
+        }
+    }
+}
+
+/// # Custom Function Executor for Environment Variables
+pub struct EnvVarExecutor;
+
+#[async_trait]
+impl FunctionExecutor for EnvVarExecutor {
+    async fn execute(&self, name: &str, arguments: &serde_json::Value) -> Result<String, FunctionCallingError> {
+        match name {
+            "get_environment_variable" => {
+                let var_name = arguments["name"].as_str()
+                    .ok_or_else(|| FunctionCallingError::InvalidArguments {
+                        message: "Missing 'name' parameter".to_string(),
+                    })?;
+                
+                let value = std::env::var(var_name)
+                    .map_err(|_| FunctionCallingError::ExecutionFailed {
+                        message: format!("Environment variable '{}' not found", var_name),
+                    })?;
+                
+                Ok(json!({"name": var_name, "value": value}).to_string())
+            }
+            _ => Err(FunctionCallingError::FunctionNotFound {
+                name: name.to_string(),
+            }),
+        }
+    }
+    
+    fn get_definition(&self) -> crate::schemas::FunctionDefinition {
+        crate::schemas::FunctionDefinition {
+            name: "get_environment_variable".to_string(),
+            description: Some("Get the value of an environment variable".to_string()),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the environment variable"
+                    }
+                },
+                "required": ["name"]
+            })),
+        }
+    }
+}
+
+/// # Function Calling Demo Handler
+/// 
+/// Custom handler that demonstrates function calling capabilities.
+async fn function_calling_demo(
+    State(state): State<AppState>,
+    Json(req): Json<ChatCompletionRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    println!("🔧 Function Calling Demo Request:");
+    println!("   Messages: {} messages", req.messages.len());
+    if let Some(ref tools) = req.tools {
+        println!("   Tools: {} tools provided", tools.len());
+        for tool in tools {
+            println!("     - {}: {}", tool.function.name, 
+                tool.function.description.as_deref().unwrap_or("No description"));
+        }
+    }
+    if let Some(ref tool_choice) = req.tool_choice {
+        println!("   Tool Choice: {:?}", tool_choice);
+    }
+    
+    // Process the request through the normal chat completions handler
+    match state.adapter.chat_completions(req).await {
+        Ok(response) => {
+            // Extract the response body
+            let body = response.into_body();
+            let bytes = axum::body::to_bytes(body, usize::MAX).await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to read response: {}", e)))?;
+            
+            let json_response: serde_json::Value = serde_json::from_slice(&bytes)
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to parse response: {}", e)))?;
+            
+            println!("✅ Function Calling Demo Response:");
+            println!("   Response: {}", serde_json::to_string_pretty(&json_response).unwrap_or_default());
+            
+            Ok(Json(json_response))
+        }
+        Err(e) => {
+            println!("❌ Function Calling Demo Error: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+    }
+}
+
+/// # Create Custom App State with Additional Functions
+async fn create_custom_app_state(cfg: Config) -> AppState {
+    // Create a custom function registry with additional functions
+    let mut registry = FunctionRegistry::new();
+    
+    // Register custom function executors
+    registry.register_function(Arc::new(SystemInfoExecutor));
+    registry.register_function(Arc::new(EnvVarExecutor));
+    
+    // Create function calling handler with custom registry
+    let function_handler = FunctionCallingHandler::new(Arc::new(registry));
+    
+    // Create the standard app state but with our custom function handler
+    let mut app_state = AppState::new(cfg).await;
+    app_state.function_handler = function_handler;
+    
+    app_state
+}
+
+/// # Main Function
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize logging
+    tracing_subscriber::fmt::init();
+    
+    println!("🚀 NexusNitroLLM Function Calling Demo");
+    println!("=====================================");
+    
+    // Create configuration
+    let config = Config::for_test();
+    println!("📋 Configuration:");
+    println!("   Backend URL: {}", config.backend_url);
+    println!("   Model: {}", config.model_id);
+    println!("   Environment: {}", config.environment);
+    
+    // Create custom app state with additional functions
+    let state = create_custom_app_state(config).await;
+    
+    // Get available tools
+    let tools = state.function_handler.get_tools();
+    println!("\n🔧 Available Tools:");
+    for tool in &tools {
+        println!("   - {}: {}", tool.function.name, 
+            tool.function.description.as_deref().unwrap_or("No description"));
+    }
+    
+    // Create router with custom demo handler
+    let app = Router::new()
+        .route("/v1/chat/completions", post(function_calling_demo))
+        .route("/v1/tools", axum::routing::get(|| async {
+            let tools = state.function_handler.get_tools();
+            Json(tools)
+        }))
+        .with_state(state.clone());
+    
+    // Start server
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8080));
+    println!("\n🌐 Server starting on http://{}", addr);
+    println!("📡 Endpoints:");
+    println!("   POST /v1/chat/completions - Chat completions with function calling");
+    println!("   GET  /v1/tools - Get available tools");
+    
+    // Run the server
+    axum_server::bind(addr)
+        .serve(app.into_make_service())
+        .await?;
+    
+    Ok(())
+}
+
+/// # Example Usage
+/// 
+/// This example demonstrates how to use the function calling API:
+/// 
+/// ## 1. Get Available Tools
+/// ```bash
+/// curl http://localhost:8080/v1/tools
+/// ```
+/// 
+/// ## 2. Chat with Function Calling
+/// ```bash
+/// curl -X POST http://localhost:8080/v1/chat/completions \
+///   -H "Content-Type: application/json" \
+///   -d '{
+///     "model": "llama",
+///     "messages": [
+///       {"role": "user", "content": "What is 5 + 3? Use the calculator function."}
+///     ],
+///     "tools": [
+///       {
+///         "type": "function",
+///         "function": {
+///           "name": "add",
+///           "description": "Add two numbers",
+///           "parameters": {
+///             "type": "object",
+///             "properties": {
+///               "a": {"type": "number", "description": "First number"},
+///               "b": {"type": "number", "description": "Second number"}
+///             },
+///             "required": ["a", "b"]
+///           }
+///         }
+///       }
+///     ],
+///     "tool_choice": "auto"
+///   }'
+/// ```
+/// 
+/// ## 3. Get System Information
+/// ```bash
+/// curl -X POST http://localhost:8080/v1/chat/completions \
+///   -H "Content-Type: application/json" \
+///   -d '{
+///     "model": "llama",
+///     "messages": [
+///       {"role": "user", "content": "Get system information"}
+///     ],
+///     "tools": [
+///       {
+///         "type": "function",
+///         "function": {
+///           "name": "get_system_info",
+///           "description": "Get system information"
+///         }
+///       }
+///     ],
+///     "tool_choice": "auto"
+///   }'
+/// ```
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn test_system_info_executor() {
+        let executor = SystemInfoExecutor;
+        let args = json!({});
+        let result = executor.execute("get_system_info", &args).await.unwrap();
+        
+        let info: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert!(info["os"].is_string());
+        assert!(info["arch"].is_string());
+    }
+
+    #[tokio::test]
+    async fn test_env_var_executor() {
+        let executor = EnvVarExecutor;
+        let args = json!({"name": "PATH"});
+        let result = executor.execute("get_environment_variable", &args).await;
+        
+        // PATH should exist on most systems
+        if result.is_ok() {
+            let info: serde_json::Value = serde_json::from_str(&result.unwrap()).unwrap();
+            assert_eq!(info["name"], "PATH");
+            assert!(info["value"].is_string());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_custom_function_registry() {
+        let mut registry = FunctionRegistry::new();
+        registry.register_function(Arc::new(SystemInfoExecutor));
+        registry.register_function(Arc::new(EnvVarExecutor));
+        
+        let tools = registry.get_tools();
+        assert!(tools.len() >= 4); // Built-in + custom functions
+        
+        let tool_names: Vec<&str> = tools.iter().map(|t| t.function.name.as_str()).collect();
+        assert!(tool_names.contains(&"get_system_info"));
+        assert!(tool_names.contains(&"get_environment_variable"));
+    }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "nexus-nitro-llm-benchmarks",
+  "version": "1.0.0",
+  "description": "Performance benchmarks for NexusNitroLLM implementations",
+  "type": "module",
+  "scripts": {
+    "install-deps": "npm install",
+    "benchmark": "node benchmark_controller.js",
+    "report": "node report_generator.js",
+    "charts": "node chart_generator.js",
+    "full-suite": "npm run benchmark && npm run report && npm run charts"
+  },
+  "dependencies": {
+    "undici": "^6.0.0",
+    "hdr-histogram-js": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

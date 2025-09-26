@@ -1,0 +1,392 @@
+use clap::Parser;
+use std::env;
+
+/// # LightLLM Rust Proxy Configuration
+/// 
+/// Comprehensive configuration system supporting command-line arguments,
+/// environment variables, and .env file loading for secure configuration management.
+#[derive(Debug, Clone, Parser)]
+#[command(name = "lightllm-rust")]
+#[command(about = "A Rust HTTP proxy that adapts OpenAI's chat completions API to work with LightLLM")]
+#[command(version)]
+pub struct Config {
+    // =============================================================================
+    // CORE SERVER CONFIGURATION
+    // =============================================================================
+    
+    /// Server port to listen on
+    #[arg(short, long, env = "PORT", default_value = "8080")]
+    pub port: u16,
+
+    /// Server host to bind to
+    #[arg(long, env = "HOST", default_value = "0.0.0.0")]
+    pub host: String,
+
+    // =============================================================================
+    // LIGHTLLM BACKEND CONFIGURATION
+    // =============================================================================
+    
+    /// LightLLM backend URL
+    #[arg(long, env = "LIGHTLLM_URL", default_value = "http://localhost:8000")]
+    pub lightllm_url: String,
+
+    /// Default model ID to use
+    #[arg(long, env = "LIGHTLLM_MODEL", default_value = "llama")]
+    pub model_id: String,
+
+    /// Authentication token for LightLLM backend
+    #[arg(long, env = "LIGHTLLM_TOKEN")]
+    pub lightllm_token: Option<String>,
+
+    // =============================================================================
+    // UI CONFIGURATION
+    // =============================================================================
+    
+    /// Username for admin UI (if enabled)
+    #[arg(long, env = "UI_USERNAME")]
+    pub ui_username: Option<String>,
+
+    /// Password for admin UI (if enabled)
+    #[arg(long, env = "UI_PASSWORD")]
+    pub ui_password: Option<String>,
+
+    // =============================================================================
+    // LITELLM PROXY CONFIGURATION
+    // =============================================================================
+    
+    /// LiteLLM proxy base URL (for virtual key generation)
+    #[arg(long, env = "LITELLM_BASE_URL")]
+    pub litellm_base_url: Option<String>,
+
+    /// LiteLLM admin token (for virtual key generation)
+    #[arg(long, env = "LITELLM_ADMIN_TOKEN")]
+    pub litellm_admin_token: Option<String>,
+
+    /// LiteLLM virtual key (pre-generated)
+    #[arg(long, env = "LITELLM_VIRTUAL_KEY")]
+    pub litellm_virtual_key: Option<String>,
+
+    // =============================================================================
+    // PERFORMANCE AND OPTIMIZATION
+    // =============================================================================
+    
+    /// HTTP client timeout in seconds
+    #[arg(long, env = "HTTP_CLIENT_TIMEOUT", default_value = "30")]
+    pub http_client_timeout: u64,
+
+    /// Maximum number of HTTP connections
+    #[arg(long, env = "HTTP_CLIENT_MAX_CONNECTIONS", default_value = "100")]
+    pub http_client_max_connections: usize,
+
+    /// Maximum connections per host
+    #[arg(long, env = "HTTP_CLIENT_MAX_CONNECTIONS_PER_HOST", default_value = "10")]
+    pub http_client_max_connections_per_host: usize,
+
+    /// Streaming chunk size in bytes
+    #[arg(long, env = "STREAMING_CHUNK_SIZE", default_value = "1024")]
+    pub streaming_chunk_size: usize,
+
+    /// Streaming timeout in seconds
+    #[arg(long, env = "STREAMING_TIMEOUT", default_value = "300")]
+    pub streaming_timeout: u64,
+
+    /// Streaming keep-alive interval in seconds
+    #[arg(long, env = "STREAMING_KEEP_ALIVE_INTERVAL", default_value = "30")]
+    pub streaming_keep_alive_interval: u64,
+
+    // =============================================================================
+    // FEATURE FLAGS
+    // =============================================================================
+    
+    /// Enable streaming support
+    #[arg(long, env = "ENABLE_STREAMING", default_value = "true")]
+    pub enable_streaming: bool,
+
+    /// Enable request batching
+    #[arg(long, env = "ENABLE_BATCHING", default_value = "false")]
+    pub enable_batching: bool,
+
+    /// Enable rate limiting
+    #[arg(long, env = "ENABLE_RATE_LIMITING", default_value = "true")]
+    pub enable_rate_limiting: bool,
+
+    /// Enable response caching
+    #[arg(long, env = "ENABLE_CACHING", default_value = "false")]
+    pub enable_caching: bool,
+
+    /// Enable metrics collection
+    #[arg(long, env = "ENABLE_METRICS", default_value = "true")]
+    pub enable_metrics: bool,
+
+    /// Enable health checks
+    #[arg(long, env = "ENABLE_HEALTH_CHECKS", default_value = "true")]
+    pub enable_health_checks: bool,
+
+    /// Force specific adapter (auto, lightllm, openai)
+    #[arg(long, env = "FORCE_ADAPTER", default_value = "auto")]
+    pub force_adapter: String,
+
+    // =============================================================================
+    // LOGGING AND MONITORING
+    // =============================================================================
+    
+    /// Log level (error, warn, info, debug, trace)
+    #[arg(long, env = "RUST_LOG", default_value = "info")]
+    pub log_level: String,
+
+    /// Enable backtrace on panic
+    #[arg(long, env = "RUST_BACKTRACE")]
+    pub rust_backtrace: Option<String>,
+
+    /// Environment (development, staging, production)
+    #[arg(long, env = "ENVIRONMENT", default_value = "development")]
+    pub environment: String,
+
+    // =============================================================================
+    // SECURITY CONFIGURATION
+    // =============================================================================
+    
+    /// CORS origin (use * for development only)
+    #[arg(long, env = "CORS_ORIGIN", default_value = "*")]
+    pub cors_origin: String,
+
+    /// CORS methods
+    #[arg(long, env = "CORS_METHODS", default_value = "GET,POST,OPTIONS")]
+    pub cors_methods: String,
+
+    /// CORS headers
+    #[arg(long, env = "CORS_HEADERS", default_value = "*")]
+    pub cors_headers: String,
+
+    /// API key validation header name
+    #[arg(long, env = "API_KEY_HEADER", default_value = "X-API-Key")]
+    pub api_key_header: String,
+
+    /// Enable API key validation
+    #[arg(long, env = "API_KEY_VALIDATION_ENABLED", default_value = "false")]
+    pub api_key_validation_enabled: bool,
+
+    // =============================================================================
+    // RATE LIMITING CONFIGURATION
+    // =============================================================================
+    
+    /// Rate limit: requests per minute
+    #[arg(long, env = "RATE_LIMIT_REQUESTS_PER_MINUTE", default_value = "60")]
+    pub rate_limit_requests_per_minute: u32,
+
+    /// Rate limit: burst size
+    #[arg(long, env = "RATE_LIMIT_BURST_SIZE", default_value = "10")]
+    pub rate_limit_burst_size: u32,
+
+    // =============================================================================
+    // CACHING CONFIGURATION
+    // =============================================================================
+    
+    /// Cache TTL in seconds
+    #[arg(long, env = "CACHE_TTL_SECONDS", default_value = "300")]
+    pub cache_ttl_seconds: u64,
+
+    /// Maximum cache size
+    #[arg(long, env = "CACHE_MAX_SIZE", default_value = "1000")]
+    pub cache_max_size: usize,
+}
+
+impl Config {
+    /// Parse configuration from command line arguments and environment variables.
+    /// 
+    /// This method:
+    /// 1. Loads environment variables from .env file if it exists
+    /// 2. Parses command line arguments
+    /// 3. Validates configuration
+    /// 4. Sets up logging
+    /// 
+    /// # Returns
+    /// 
+    /// A validated `Config` instance ready for use.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// let config = Config::parse_args();
+    /// println!("Server will run on port: {}", config.port);
+    /// ```
+    pub fn parse_args() -> Self {
+        // Load .env file if it exists (ignore errors if file doesn't exist)
+        let _ = dotenv::dotenv();
+
+        let config = Self::parse();
+
+        // Set up logging based on configuration
+        config.setup_logging();
+
+        // Validate configuration
+        config.validate();
+
+        config
+    }
+
+    /// Set up logging configuration based on environment variables.
+    /// 
+    /// This method configures the tracing subscriber with the appropriate
+    /// log level and format based on the configuration.
+    fn setup_logging(&self) {
+        // Set RUST_BACKTRACE if specified
+        if let Some(backtrace) = &self.rust_backtrace {
+            env::set_var("RUST_BACKTRACE", backtrace);
+        }
+
+        // Initialize tracing subscriber with environment filter
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(&self.log_level)
+            .with_target(false)
+            .with_thread_ids(false)
+            .with_thread_names(false)
+            .try_init();
+    }
+
+    /// Validate configuration values and provide helpful error messages.
+    /// 
+    /// This method checks for common configuration issues and provides
+    /// clear error messages to help users fix their configuration.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if configuration is invalid with a helpful error message.
+    fn validate(&self) {
+        // Validate port range
+        if self.port == 0 {
+            panic!("Port cannot be 0. Please specify a valid port number.");
+        }
+
+        // Validate host
+        if self.host.is_empty() {
+            panic!("Host cannot be empty. Please specify a valid host.");
+        }
+
+        // Validate LightLLM URL
+        if self.lightllm_url.is_empty() {
+            panic!("LightLLM URL cannot be empty. Please specify a valid backend URL.");
+        }
+
+        // Validate model ID
+        if self.model_id.is_empty() {
+            panic!("Model ID cannot be empty. Please specify a valid model ID.");
+        }
+
+        // Validate adapter selection
+        let valid_adapters = ["auto", "lightllm", "openai"];
+        if !valid_adapters.contains(&self.force_adapter.as_str()) {
+            panic!(
+                "Invalid adapter '{}'. Valid options are: {}",
+                self.force_adapter,
+                valid_adapters.join(", ")
+            );
+        }
+
+        // Validate environment
+        let valid_environments = ["development", "staging", "production"];
+        if !valid_environments.contains(&self.environment.as_str()) {
+            panic!(
+                "Invalid environment '{}'. Valid options are: {}",
+                self.environment,
+                valid_environments.join(", ")
+            );
+        }
+
+        // Validate CORS origin for production
+        if self.environment == "production" && self.cors_origin == "*" {
+            eprintln!(
+                "⚠️  Warning: Using CORS origin '*' in production is not recommended. \
+                Consider specifying specific origins for better security."
+            );
+        }
+
+        // Validate token requirements
+        if self.lightllm_url.contains("/v1/") && self.lightllm_token.is_none() {
+            eprintln!(
+                "⚠️  Warning: Using LiteLLM proxy URL without token. \
+                You may need to set LIGHTLLM_TOKEN for authentication."
+            );
+        }
+    }
+
+    /// Get the effective LightLLM token, checking multiple sources.
+    /// 
+    /// This method checks for tokens in the following order:
+    /// 1. Explicitly provided LIGHTLLM_TOKEN
+    /// 2. LiteLLM virtual key (LITELLM_VIRTUAL_KEY)
+    /// 3. None (no authentication)
+    /// 
+    /// # Returns
+    /// 
+    /// The most appropriate token for authentication, or None if no token is available.
+    pub fn get_effective_token(&self) -> Option<String> {
+        self.lightllm_token
+            .clone()
+            .or_else(|| self.litellm_virtual_key.clone())
+    }
+
+    /// Check if this configuration is for a LiteLLM proxy backend.
+    /// 
+    /// LiteLLM proxy backends typically have URLs containing "/v1/" and
+    /// require virtual keys (starting with "sk-") for authentication.
+    /// 
+    /// # Returns
+    /// 
+    /// True if this appears to be a LiteLLM proxy configuration.
+    pub fn is_litellm_proxy(&self) -> bool {
+        self.lightllm_url.contains("/v1/") || self.lightllm_url.contains("openai")
+    }
+
+    /// Check if this configuration is for a raw LightLLM server.
+    /// 
+    /// Raw LightLLM servers typically don't have "/v1/" in their URLs and
+    /// use the native LightLLM API format.
+    /// 
+    /// # Returns
+    /// 
+    /// True if this appears to be a raw LightLLM server configuration.
+    pub fn is_raw_lightllm(&self) -> bool {
+        !self.is_litellm_proxy()
+    }
+
+    /// Get a summary of the configuration for logging/debugging.
+    /// 
+    /// This method returns a string containing the key configuration
+    /// values without exposing sensitive information like tokens.
+    /// 
+    /// # Returns
+    /// 
+    /// A formatted string with configuration summary.
+    pub fn summary(&self) -> String {
+        let token_status = if self.get_effective_token().is_some() {
+            "*** (configured)"
+        } else {
+            "none"
+        };
+        
+        format!(
+            "Config Summary:\n\
+            - Server: {}:{}\n\
+            - Backend: {}\n\
+            - Model: {}\n\
+            - Environment: {}\n\
+            - Adapter: {}\n\
+            - Streaming: {}\n\
+            - Rate Limiting: {}\n\
+            - Caching: {}\n\
+            - Metrics: {}\n\
+            - Token: {}",
+            self.host,
+            self.port,
+            self.lightllm_url,
+            self.model_id,
+            self.environment,
+            self.force_adapter,
+            self.enable_streaming,
+            self.enable_rate_limiting,
+            self.enable_caching,
+            token_status
+        )
+    }
+}

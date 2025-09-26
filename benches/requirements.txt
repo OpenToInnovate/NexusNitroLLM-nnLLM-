@@ -1,0 +1,4 @@
+# Python benchmark dependencies
+httpx==0.27.0
+hdrhistogram==0.8.0
+
