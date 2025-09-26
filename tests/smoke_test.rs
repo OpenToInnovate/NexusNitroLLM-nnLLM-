@@ -12,7 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     println!("🚀 Running minimal smoke test against {}", base_url);
     
-    let client = Client::builder();
+    let client = Client::builder()
         .timeout(Duration::from_secs(5))
         .build()?;
     

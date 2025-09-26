@@ -27,7 +27,7 @@ mod tests {
     #[test]
     #[cfg(feature = "server")]
     fn test_high_performance_client_config() {
-        let config = ClientConfig {;
+        let config = ClientConfig {
             base_url: "http://test:8080".to_string(),
             timeout: Duration::from_secs(60),
             max_concurrent: 16,

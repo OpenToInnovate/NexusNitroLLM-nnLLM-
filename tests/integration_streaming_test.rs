@@ -21,7 +21,7 @@ use tracing::{info, warn};
 /// Tests streaming functionality with LightLLM backend.
 
 async fn test_lightllm_streaming() {
-    let adapter = LightLLMAdapter::new(;
+    let adapter = LightLLMAdapter::new(
         "http://localhost:8000".to_string(),
         "test-model".to_string(),
         None,
@@ -31,7 +31,7 @@ async fn test_lightllm_streaming() {
     
     // Test that LightLLM properly rejects streaming requests
     use nexus_nitro_llm::schemas::{ChatCompletionRequest, Message};
-    let streaming_request = ChatCompletionRequest {;
+    let streaming_request = ChatCompletionRequest {
         model: Some("test-model".to_string()),
         messages: vec![Message {
             role: "user".to_string(),

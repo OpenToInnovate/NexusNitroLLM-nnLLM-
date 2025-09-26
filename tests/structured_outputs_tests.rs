@@ -627,8 +627,8 @@ async fn test_structured_outputs_integration_suite() {
     println!("🚀 Starting comprehensive structured outputs & JSON mode test suite");
     
     // Test all structured output scenarios
-    test_json_mode()
-    test_json_schema_validation()
+    test_json_mode();
+    test_json_schema_validation();
     test_invalid_json_schema()
     test_xml_format()
     test_yaml_format()

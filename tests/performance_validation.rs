@@ -15,7 +15,7 @@ use std::pin::pin;
 
 #[tokio::test]
 async fn test_connection_pooling() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         base_url: "http://localhost:3000".to_string(),
         timeout: Duration::from_secs(5),
         max_concurrent: 10,
@@ -61,7 +61,7 @@ async fn test_connection_pooling() {
 
 #[tokio::test]
 async fn test_deadline_propagation() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         timeout: Duration::from_secs(30),
         ..Default::default()
     };
@@ -88,7 +88,7 @@ async fn test_deadline_propagation() {
 
 #[tokio::test]
 async fn test_concurrency_limit() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         max_concurrent: 2,
         timeout: Duration::from_secs(10),
         ..Default::default()
@@ -129,7 +129,7 @@ async fn test_concurrency_limit() {
 
 #[tokio::test]
 async fn test_retry_logic() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         retry_attempts: 3,
         retry_base_delay: Duration::from_millis(50),
         max_retry_delay: Duration::from_millis(200),
@@ -157,7 +157,7 @@ async fn test_retry_logic() {
 
 #[tokio::test]
 async fn test_streaming_backpressure() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         timeout: Duration::from_secs(10),
         ..Default::default()
     };
@@ -210,7 +210,7 @@ async fn test_streaming_backpressure() {
 
 #[tokio::test]
 async fn test_memory_efficiency() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         max_concurrent: 5,
         timeout: Duration::from_secs(5),
         ..Default::default()
@@ -251,7 +251,7 @@ async fn test_memory_efficiency() {
 
 #[tokio::test]
 async fn test_error_handling() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         timeout: Duration::from_secs(2),
         retry_attempts: 1,
         ..Default::default()
@@ -286,7 +286,7 @@ async fn test_error_handling() {
 
 #[tokio::test]
 async fn test_performance_benchmark() {
-    let config = ClientConfig {;
+    let config = ClientConfig {
         max_concurrent: 10,
         timeout: Duration::from_secs(5),
         ..Default::default()

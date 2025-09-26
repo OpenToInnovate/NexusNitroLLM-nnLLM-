@@ -214,7 +214,7 @@ async fn test_idempotency_keys() {
     let idempotency_key = "test-idempotency-key-123";
     
     // First request with idempotency key
-    let request1 = Request::builder();
+    let request1 = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")

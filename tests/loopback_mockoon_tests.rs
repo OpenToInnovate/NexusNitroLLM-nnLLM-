@@ -57,7 +57,7 @@ async fn wait_for_proxy_server() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        sleep(Duration::from_millis(1000))
+        sleep(Duration::from_millis(1000));
         attempts += 1;
     }
 

@@ -75,9 +75,9 @@ async fn test_high_concurrency_stress() {
             let _permit = permit; // Hold the permit
             
             // Wait for all tasks to be ready
-            barrier.wait()
+            barrier.wait();
             
-            let request_body = json!({;
+            let request_body = json!({
                 "model": "stress-test-model",
                 "messages": [
                     {"role": "user", "content": format!("Stress test request {}", i)}
