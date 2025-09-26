@@ -212,7 +212,7 @@ async fn test_memory_management_streaming() {
     let results = timeout(
         Duration::from_secs(30),
         futures::future::join_all(handles)
-    )
+    ).await;
     
     match results {
         Ok(completed_handles) => {
@@ -341,7 +341,7 @@ async fn test_performance_under_load() {
         let results = timeout(
             Duration::from_secs(30),
             futures::future::join_all(handles)
-        )
+        ).await;
         
         let duration = start_time.elapsed();
         
@@ -605,7 +605,7 @@ async fn test_mixed_request_types() {
     let results = timeout(
         Duration::from_secs(30),
         futures::future::join_all(handles)
-    )
+    ).await;
     
     match results {
         Ok(completed_handles) => {

@@ -62,7 +62,7 @@ impl Default for AuthTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 async fn create_test_app_state() -> AppState {
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -111,7 +111,7 @@ async fn test_chat_completions_auth() {
     
     // Test with valid API keys
     for api_key in &config.valid_api_keys {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -128,7 +128,7 @@ async fn test_chat_completions_auth() {
     
     // Test with invalid API keys
     for api_key in &config.invalid_api_keys {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -145,7 +145,7 @@ async fn test_chat_completions_auth() {
     }
     
     // Test without authorization header
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -168,7 +168,7 @@ async fn test_chat_completions_headers() {
     let app = create_router(app_state);
     
     // Test with invalid content type
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "text/plain")
@@ -188,7 +188,7 @@ async fn test_chat_completions_headers() {
     println!("✅ Invalid content type rejected");
     
     // Test with valid headers
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -214,7 +214,7 @@ async fn test_health_endpoint_auth() {
     let app = create_router(app_state);
     
     // Health endpoint should be accessible without authentication
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/health")
         .header("authorization", "Bearer sk-test-key")
@@ -238,7 +238,7 @@ async fn test_ui_proxy_auth() {
     let app = create_router(app_state);
     
     // UI proxy should be accessible without authentication
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/v1/ui")
         .header("authorization", "Bearer sk-test-key")
@@ -272,7 +272,7 @@ async fn test_login_endpoint_auth() {
         "password": "test-password"
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/login")
         .header("content-type", "application/json")
@@ -301,7 +301,7 @@ async fn test_cors_headers() {
     let endpoints = vec!["/v1/chat/completions", "/health", "/v1/ui"];
     
     for endpoint in endpoints {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::OPTIONS)
             .uri(endpoint)
             .header("origin", "https://example.com")
@@ -331,7 +331,7 @@ async fn test_rate_limiting_headers() {
     
     // Make multiple requests to test rate limiting
     for i in 0..10 {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -360,7 +360,7 @@ async fn test_custom_headers() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -389,7 +389,7 @@ async fn test_header_size_limits() {
     // Test with very large header value
     let large_value = "x".repeat(8192); // 8KB header
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -419,7 +419,7 @@ async fn test_malformed_headers() {
     let app = create_router(app_state);
     
     // Test with malformed authorization header
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -435,7 +435,7 @@ async fn test_malformed_headers() {
     println!("✅ Malformed authorization header rejected");
     
     // Test with empty headers
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "")
@@ -535,7 +535,7 @@ async fn test_python_binding_auth() {
             config = nexus_nitro_llm.PyConfig(
                 lightllm_url="http://localhost:8000",
                 model_id="test-model"
-            )
+            ).await;
             client = nexus_nitro_llm.PyLightLLMClient(config)
             
             # Test with valid API key
@@ -629,7 +629,7 @@ async fn test_cross_language_header_consistency() {
     ];
     
     for (header_name, header_value) in test_headers {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -656,7 +656,7 @@ async fn test_language_specific_error_messages() {
     let app = create_router(app_state);
     
     // Test unauthorized request
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")

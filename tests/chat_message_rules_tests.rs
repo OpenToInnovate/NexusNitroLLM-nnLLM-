@@ -57,7 +57,7 @@ impl Default for MessageRulesTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -89,7 +89,7 @@ async fn test_message_role_validation() {
             ]
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -124,7 +124,7 @@ async fn test_message_role_validation() {
             ]
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -157,7 +157,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -179,7 +179,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -201,7 +201,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -223,7 +223,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -265,7 +265,7 @@ async fn test_message_ordering_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -290,7 +290,7 @@ async fn test_message_ordering_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -319,7 +319,7 @@ async fn test_message_ordering_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -377,7 +377,7 @@ async fn test_tool_message_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -398,7 +398,7 @@ async fn test_tool_message_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -434,7 +434,7 @@ async fn test_tool_message_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -468,7 +468,7 @@ async fn test_conversation_length_limits() {
         "messages": messages
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -492,7 +492,7 @@ async fn test_conversation_length_limits() {
         "messages": long_messages
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -524,7 +524,7 @@ async fn test_message_name_field_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -546,7 +546,7 @@ async fn test_message_name_field_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -568,7 +568,7 @@ async fn test_message_name_field_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -602,7 +602,7 @@ async fn test_function_call_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -626,7 +626,7 @@ async fn test_function_call_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -651,7 +651,7 @@ async fn test_function_call_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -681,7 +681,7 @@ async fn test_message_content_type_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -713,7 +713,7 @@ async fn test_message_content_type_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -735,7 +735,7 @@ async fn test_message_content_type_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -769,7 +769,7 @@ async fn test_system_message_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -798,7 +798,7 @@ async fn test_system_message_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -823,7 +823,7 @@ async fn test_system_message_rules() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")

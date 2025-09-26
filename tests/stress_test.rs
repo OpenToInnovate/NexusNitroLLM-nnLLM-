@@ -86,7 +86,7 @@ async fn test_high_concurrency_stress() {
                 "stream": i % 2 == 0 // Mix of streaming and non-streaming
             });
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -171,7 +171,7 @@ async fn test_memory_stress() {
                     "stream": true // Use streaming for more memory-intensive test
                 });
                 
-                let request = Request::builder();
+                let request = Request::builder()
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -250,7 +250,7 @@ async fn test_long_running_connections() {
             "stream": request_count % 3 == 0 // Mix of request types
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -338,7 +338,7 @@ async fn test_resource_exhaustion_recovery() {
                 "stream": true
             });
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -373,7 +373,7 @@ async fn test_resource_exhaustion_recovery() {
                 "stream": false
             });
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -457,7 +457,7 @@ async fn test_failure_recovery() {
     for (i, (invalid_body, expected_status)) in failure_scenarios.iter().enumerate() {
         println!("  Testing failure scenario {}", i + 1);
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -530,7 +530,7 @@ async fn test_burst_traffic_handling() {
                     "stream": i % 2 == 0
                 });
                 
-                let request = Request::builder();
+                let request = Request::builder()
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")

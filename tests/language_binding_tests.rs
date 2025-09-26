@@ -112,7 +112,7 @@ mod tests {
         use nexus_nitro_llm::schemas::{ChatCompletionRequest, ChatCompletionResponse, Message};
 
         // Test that core schema types work properly for bindings
-        let message = Message {;
+        let message = Message {
             role: "user".to_string(),
             content: Some("Hello".to_string()),
             name: None,
@@ -240,7 +240,7 @@ mod tests {
         use serde_json;
 
         // Test that schemas can be serialized/deserialized for bindings
-        let message = Message {;
+        let message = Message {
             role: "user".to_string(),
             content: Some("Hello, world!".to_string()),
             name: None,

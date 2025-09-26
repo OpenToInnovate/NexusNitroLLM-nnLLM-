@@ -99,7 +99,7 @@ async fn test_retry_on_5xx_errors() {
     let config = RetryTestConfig::default();
     
     // Test with a backend that returns 5xx errors
-    let error_config = Config {;
+    let error_config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:9999".to_string(), // Unreachable port
         model_id: "test-model".to_string(),
@@ -114,7 +114,7 @@ async fn test_retry_on_5xx_errors() {
     
     let start_time = std::time::Instant::now();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -152,7 +152,7 @@ async fn test_no_retry_on_4xx_errors() {
     
     let start_time = std::time::Instant::now();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -278,7 +278,7 @@ async fn test_retry_with_different_adapters() {
         
         let request_data = create_test_request();
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -341,7 +341,7 @@ async fn test_retry_headers() {
     
     let request_data = create_test_request();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -461,7 +461,7 @@ async fn test_concurrent_retries() {
         let handle = tokio::spawn(async move {;
             let request_data = create_test_request();
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")

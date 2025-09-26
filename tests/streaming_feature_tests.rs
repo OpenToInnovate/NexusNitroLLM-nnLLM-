@@ -330,7 +330,7 @@ mod tests {
         use nexus_nitro_llm::schemas::{ChatCompletionChunk, StreamDelta};
 
         // Test streaming-specific schema types
-        let delta = StreamDelta {;
+        let delta = StreamDelta {
             role: Some("assistant".to_string()),
             content: Some("Hello".to_string()),
             function_call: None,

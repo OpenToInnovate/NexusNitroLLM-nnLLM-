@@ -48,10 +48,6 @@ name = "integration_tests"
 path = "tests/integration_tests.rs"
 required-features = ["server", "streaming"]
 
-[[test]]
-name = "proxy_functionality_tests"
-path = "tests/proxy_functionality_tests.rs"
-required-features = ["server", "streaming"]
 
 [[test]]
 name = "rust_native_mockoon_tests"

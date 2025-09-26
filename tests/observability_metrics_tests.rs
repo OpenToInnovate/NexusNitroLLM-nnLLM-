@@ -53,7 +53,7 @@ impl Default for ObservabilityTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -99,7 +99,7 @@ async fn test_metrics_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/metrics")
         .body(Body::empty())
@@ -135,7 +135,7 @@ async fn test_health_check_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/health")
         .body(Body::empty())
@@ -170,7 +170,7 @@ async fn test_error_metrics_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/errors")
         .body(Body::empty())
@@ -205,7 +205,7 @@ async fn test_performance_metrics_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/performance")
         .body(Body::empty())
@@ -244,7 +244,7 @@ async fn test_metrics_collection() {
     for i in 0..5 {
         let request_data = create_test_request();
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -341,7 +341,7 @@ async fn test_error_tracking() {
     ];
     
     for (i, error_request) in error_requests.iter().enumerate() {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -391,7 +391,7 @@ async fn test_performance_monitoring() {
     for i in 0..10 {
         let request_data = create_test_request();
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -440,7 +440,7 @@ async fn test_metrics_format_validation() {
     let config = ObservabilityTestConfig::default();
     
     for endpoint in &config.metrics_endpoints {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::GET)
             .uri(endpoint)
             .body(Body::empty())
@@ -475,7 +475,7 @@ async fn test_metrics_authentication() {
     let app = create_router(app_state);
     
     // Test metrics endpoint without authentication
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::GET)
         .uri("/metrics")
         .body(Body::empty())
@@ -515,7 +515,7 @@ async fn test_metrics_rate_limiting() {
     
     // Make multiple requests to metrics endpoint
     for i in 0..20 {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::GET)
             .uri("/metrics")
             .header("x-request-id", format!("rate-limit-test-{}", i))

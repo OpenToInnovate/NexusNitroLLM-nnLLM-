@@ -23,7 +23,7 @@ async fn test_server_health_check() {
     let state = AppState::new(config);
     let app = create_router(state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/health")
         .method("GET")
         .body(Body::empty())
@@ -53,7 +53,7 @@ async fn test_chat_completions_endpoint() {
         "max_tokens": 10
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -86,7 +86,7 @@ async fn test_streaming_endpoint() {
         "max_tokens": 10
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -185,7 +185,7 @@ async fn test_malformed_json_handling() {
     let state = AppState::new(config);
     let app = create_router(state);
     
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")

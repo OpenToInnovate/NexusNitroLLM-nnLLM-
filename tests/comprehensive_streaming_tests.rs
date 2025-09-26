@@ -49,7 +49,7 @@ impl Default for StreamingTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -98,7 +98,7 @@ async fn test_sse_format_validation() {
     
     let request_data = create_streaming_test_request();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -135,7 +135,7 @@ async fn test_sse_chunk_format() {
     
     let request_data = create_streaming_test_request();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -184,7 +184,7 @@ async fn test_streaming_error_handling() {
         "stream": true
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -204,7 +204,7 @@ async fn test_streaming_error_handling() {
         "stream": true
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -232,7 +232,7 @@ async fn test_streaming_performance() {
     
     let start_time = std::time::Instant::now();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -301,7 +301,7 @@ async fn test_streaming_with_parameters() {
     ];
     
     for (i, request_data) in parameter_tests.iter().enumerate() {
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -350,7 +350,7 @@ async fn test_streaming_with_tools() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -389,7 +389,7 @@ async fn test_streaming_cancellation() {
     let result = timeout(;
         Duration::from_millis(100),
         async {
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -399,7 +399,7 @@ async fn test_streaming_cancellation() {
             
             app.clone().oneshot(request).await
         }
-    )
+    ).await;
     
     match result {
         Ok(response) => {
@@ -465,7 +465,7 @@ async fn test_streaming_content_types() {
     for (content_type, description) in content_type_tests {
         let request_data = create_streaming_test_request();
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -496,7 +496,7 @@ async fn test_streaming_buffer_management() {
         "max_tokens": 2000
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -527,7 +527,7 @@ async fn test_streaming_error_recovery() {
     let app = create_router(app_state);
     
     // Test with invalid backend URL to trigger error
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://invalid-backend:9999".to_string(),
         model_id: "test-model".to_string(),
@@ -540,7 +540,7 @@ async fn test_streaming_error_recovery() {
     
     let request_data = create_streaming_test_request();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")

@@ -45,7 +45,7 @@ async fn test_chat_completions_success() {
                 "text": "I'm doing well, thank you! How can I help you today?"
             })))
         .expect(1) // We expect exactly 1 request
-        .mount(&mock_server)
+        .mount(&mock_server);
         
 
     let mock_uri = mock_server.uri();
@@ -65,7 +65,7 @@ async fn test_chat_completions_success() {
         "top_p": 1.0
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -105,7 +105,7 @@ async fn test_chat_completions_with_system_message() {
             .set_body_json(json!({
                 "text": "2 + 2 equals 4."
             })))
-        .mount(&mock_server)
+        .mount(&mock_server);
         
 
     let app = create_test_app(mock_server.uri());
@@ -127,7 +127,7 @@ async fn test_chat_completions_with_system_message() {
         "top_p": 0.9
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -165,7 +165,7 @@ async fn test_chat_completions_stream_supported() {
         "stream": true
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -198,7 +198,7 @@ async fn test_chat_completions_upstream_error() {
         .respond_with(ResponseTemplate::new(500).set_body_json(json!({
             "error": "Internal server error"
         })))
-        .mount(&mock_server)
+        .mount(&mock_server);
         
 
     let app = create_test_app(mock_server.uri());
@@ -213,7 +213,7 @@ async fn test_chat_completions_upstream_error() {
         ]
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")

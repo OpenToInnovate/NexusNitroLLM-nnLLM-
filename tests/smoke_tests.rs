@@ -278,7 +278,7 @@ impl SmokeTestClient {
                     200..=299 => Ok(response),
                     400..=499 => {
                         if status == 429 {
-                            let retry_after = response;
+                            let retry_after = response
                                 .headers()
                                 .get("retry-after")
                                 .and_then(|h| h.to_str().ok())
@@ -377,7 +377,7 @@ impl SmokeTestSuite {
         tokio::spawn({
             let token = cancel_token.clone();
             async move {
-                sleep(Duration::from_millis(100))
+                sleep(Duration::from_millis(100));
                 token.cancel();
             }
         });
@@ -500,7 +500,7 @@ impl SmokeTestSuite {
             println!("🎉 All smoke tests passed!");
             Ok(())
         } else {
-            let error_msg = failed_tests;
+            let error_msg = failed_tests
                 .into_iter()
                 .map(|(name, error)| format!("{}: {}", name, error))
                 .collect::<Vec<_>>()

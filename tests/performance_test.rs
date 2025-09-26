@@ -276,7 +276,7 @@ async fn test_throughput_performance() {
                 "stream": request_id % 3 == 0 // 1/3 streaming requests
             });
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -390,7 +390,7 @@ async fn test_streaming_performance() {
                 "stream": true
             });
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -594,7 +594,7 @@ async fn test_connection_efficiency() {
             "stream": false
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")

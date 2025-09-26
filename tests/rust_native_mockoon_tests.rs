@@ -61,7 +61,7 @@ async fn test_native_rust_health_check() {
     let state = AppState::new(config);
     let app = create_router(state);
 
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/health")
         .method("GET")
         .body(Body::empty())
@@ -94,7 +94,7 @@ async fn test_native_rust_chat_completion() {
         "max_tokens": 50
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -133,7 +133,7 @@ async fn test_native_rust_streaming() {
         "max_tokens": 50
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -161,7 +161,7 @@ async fn test_native_rust_models_endpoint() {
     let state = AppState::new(config);
     let app = create_router(state);
 
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/models")
         .method("GET")
         .body(Body::empty())
@@ -187,7 +187,7 @@ async fn test_native_rust_error_handling() {
     let app = create_router(state);
 
     // Test malformed JSON
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -204,7 +204,7 @@ async fn test_native_rust_error_handling() {
         "max_tokens": 50
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -241,7 +241,7 @@ async fn test_native_rust_different_models() {
             "max_tokens": 50
         });
 
-        let request = Request::builder();
+        let request = Request::builder()
             .uri("/v1/chat/completions")
             .method("POST")
             .header("content-type", "application/json")
@@ -285,7 +285,7 @@ async fn test_native_rust_concurrent_requests() {
         let body_data_clone = body_data.clone();
         
         let handle = tokio::spawn(async move {;
-            let request = Request::builder();
+            let request = Request::builder()
                 .uri("/v1/chat/completions")
                 .method("POST")
                 .header("content-type", "application/json")
@@ -337,7 +337,7 @@ async fn test_native_rust_large_request() {
         "max_tokens": 100
     });
 
-    let request = Request::builder();
+    let request = Request::builder()
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -502,7 +502,7 @@ async fn test_native_rust_performance() {
     let request_count = 10;
 
     for i in 0..request_count {
-        let request = Request::builder();
+        let request = Request::builder()
             .uri("/v1/chat/completions")
             .method("POST")
             .header("content-type", "application/json")

@@ -46,7 +46,7 @@ async fn test_streaming_request_format() {
         "stream": true
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -103,7 +103,7 @@ async fn test_non_streaming_request() {
             .set_body_json(json!({
                 "text": "The capital of France is Paris."
             })))
-        .mount(&mock_server)
+        .mount(&mock_server);
         
 
     let app = create_streaming_test_app(mock_server.uri());
@@ -117,7 +117,7 @@ async fn test_non_streaming_request() {
         "stream": false
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -154,7 +154,7 @@ async fn test_missing_stream_parameter() {
             .set_body_json(json!({
                 "text": "The capital of France is Paris."
             })))
-        .mount(&mock_server)
+        .mount(&mock_server);
         
 
     let app = create_streaming_test_app(mock_server.uri());
@@ -168,7 +168,7 @@ async fn test_missing_stream_parameter() {
         // No stream parameter
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")

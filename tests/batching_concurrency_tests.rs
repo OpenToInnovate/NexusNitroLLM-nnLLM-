@@ -51,7 +51,7 @@ impl Default for BatchingTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 async fn create_test_app_state() -> AppState {
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -109,7 +109,7 @@ async fn test_concurrent_requests() {
         let handle = tokio::spawn(async move {;
             let request_data = create_test_request(i);
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -164,8 +164,8 @@ async fn test_request_batching() {
             let app_clone = app.clone();
             let request_data = create_test_request(batch * config.batch_size + i);
             
-            let handle = tokio::spawn(async move {;
-                let request = Request::builder();
+            let handle = tokio::spawn(async move {
+                let request = Request::builder()
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -230,7 +230,7 @@ async fn test_high_concurrency_load() {
         let handle = tokio::spawn(async move {;
             let request_data = create_test_request(i);
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -317,7 +317,7 @@ async fn test_request_queuing() {
             let handle = tokio::spawn(async move {;
                 let request_data = create_test_request(i);
                 
-                let request = Request::builder();
+                let request = Request::builder()
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -374,7 +374,7 @@ async fn test_connection_pooling() {
             let handle = tokio::spawn(async move {;
                 let request_data = create_test_request(i);
                 
-                let request = Request::builder();
+                let request = Request::builder()
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -430,7 +430,7 @@ async fn test_request_prioritization() {
             let handle = tokio::spawn(async move {;
                 let request_data = create_test_request(i);
                 
-                let request = Request::builder();
+                let request = Request::builder()
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -494,7 +494,7 @@ async fn test_resource_exhaustion_handling() {
         let handle = tokio::spawn(async move {;
             let request_data = create_test_request(i);
             
-            let request = Request::builder();
+            let request = Request::builder()
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")

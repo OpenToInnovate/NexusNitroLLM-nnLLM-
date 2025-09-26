@@ -57,7 +57,7 @@ impl Default for SecurityTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {;
+    let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -129,7 +129,7 @@ async fn test_input_sanitization() {
             ]
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -166,7 +166,7 @@ async fn test_rate_limiting() {
     for i in 0..(config.rate_limit_requests_per_minute + 10) {
         let request_data = create_test_request();
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -223,7 +223,7 @@ async fn test_request_size_limits() {
         ]
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -253,7 +253,7 @@ async fn test_cors_security() {
     headers.insert("origin", HeaderValue::from_static("https://example.com"));
     headers.insert("access-control-request-method", HeaderValue::from_static("POST"));
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::OPTIONS)
         .uri("/v1/chat/completions")
         .headers(headers)
@@ -305,7 +305,7 @@ async fn test_authentication_security() {
     // Test without authentication
     let request_data = create_test_request();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -383,7 +383,7 @@ async fn test_sql_injection_prevention() {
             ]
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -435,7 +435,7 @@ async fn test_xss_prevention() {
             ]
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -484,7 +484,7 @@ async fn test_privacy_protection() {
             ]
         });
         
-        let request = Request::builder();
+        let request = Request::builder()
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -526,7 +526,7 @@ async fn test_security_headers() {
     
     let request_data = create_test_request();
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -584,7 +584,7 @@ async fn test_request_validation() {
         // Missing messages field
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -600,7 +600,7 @@ async fn test_request_validation() {
         "messages": "invalid type" // Should be array
     });
     
-    let request = Request::builder();
+    let request = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
