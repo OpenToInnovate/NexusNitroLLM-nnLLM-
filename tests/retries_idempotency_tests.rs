@@ -99,7 +99,7 @@ async fn test_retry_on_5xx_errors() {
     let config = RetryTestConfig::default();
     
     // Test with a backend that returns 5xx errors
-    let error_config = Config {
+    let error_config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:9999".to_string(), // Unreachable port
         model_id: "test-model".to_string(),
@@ -114,7 +114,7 @@ async fn test_retry_on_5xx_errors() {
     
     let start_time = std::time::Instant::now();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -145,14 +145,14 @@ async fn test_no_retry_on_4xx_errors() {
     let app = create_router(app_state);
     
     // Test with invalid request that should return 4xx
-    let invalid_request = json!({
+    let invalid_request = json!({;
         "model": "test-model",
         "messages": [] // Empty messages should cause 400
     });
     
     let start_time = std::time::Instant::now();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -214,7 +214,7 @@ async fn test_idempotency_keys() {
     let idempotency_key = "test-idempotency-key-123";
     
     // First request with idempotency key
-    let request1 = Request::builder()
+    let request1 = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -225,7 +225,7 @@ async fn test_idempotency_keys() {
     let response1 = app.clone().oneshot(request1).await.unwrap();
     
     // Second request with same idempotency key
-    let request2 = Request::builder()
+    let request2 = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -253,7 +253,7 @@ async fn test_idempotency_keys() {
 async fn test_retry_with_different_adapters() {
     let config = RetryTestConfig::default();
     
-    let adapters = vec![
+    let adapters = vec![;
         ("lightllm", "http://localhost:8000"),
         ("vllm", "http://localhost:8001"),
         ("openai", "https://api.openai.com"),
@@ -265,7 +265,7 @@ async fn test_retry_with_different_adapters() {
         println!("Testing retry with {} adapter", adapter_type);
         
         // Test configuration for each adapter
-        let test_config = Config {
+        let test_config = Config {;
             backend_type: adapter_type.to_string(),
             backend_url: url.to_string(),
             model_id: "test-model".to_string(),
@@ -278,7 +278,7 @@ async fn test_retry_with_different_adapters() {
         
         let request_data = create_test_request();
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -302,7 +302,7 @@ async fn test_circuit_breaker_pattern() {
     let config = RetryTestConfig::default();
     
     // Simulate circuit breaker states
-    let circuit_breaker_states = vec![
+    let circuit_breaker_states = vec![;
         "closed",    // Normal operation
         "open",      // Failing, no requests allowed
         "half-open", // Testing if service recovered
@@ -341,7 +341,7 @@ async fn test_retry_headers() {
     
     let request_data = create_test_request();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -379,11 +379,11 @@ async fn test_timeout_handling() {
     // Test with short timeout
     let short_timeout = Duration::from_millis(100);
     
-    let result = timeout(short_timeout, async {
+    let result = timeout(short_timeout, async {;
         // Simulate long-running operation
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(1))
         "completed"
-    }).await;
+    })
     
     match result {
         Ok(_) => {
@@ -397,11 +397,11 @@ async fn test_timeout_handling() {
     // Test with longer timeout
     let long_timeout = Duration::from_secs(5);
     
-    let result = timeout(long_timeout, async {
+    let result = timeout(long_timeout, async {;
         // Simulate quick operation
-        sleep(Duration::from_millis(100)).await;
+        sleep(Duration::from_millis(100))
         "completed"
-    }).await;
+    })
     
     match result {
         Ok(value) => {
@@ -458,10 +458,10 @@ async fn test_concurrent_retries() {
     // Spawn multiple concurrent requests
     for i in 0..10 {
         let app_clone = app.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let request_data = create_test_request();
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -497,16 +497,16 @@ async fn test_retries_idempotency_integration_suite() {
     println!("🚀 Starting comprehensive retries, idempotency & backoff test suite");
     
     // Test all retry scenarios
-    test_retry_on_5xx_errors().await;
-    test_no_retry_on_4xx_errors().await;
-    test_exponential_backoff().await;
-    test_idempotency_keys().await;
-    test_retry_with_different_adapters().await;
-    test_circuit_breaker_pattern().await;
-    test_retry_headers().await;
-    test_timeout_handling().await;
-    test_retry_metrics().await;
-    test_concurrent_retries().await;
+    test_retry_on_5xx_errors()
+    test_no_retry_on_4xx_errors()
+    test_exponential_backoff()
+    test_idempotency_keys()
+    test_retry_with_different_adapters()
+    test_circuit_breaker_pattern()
+    test_retry_headers()
+    test_timeout_handling()
+    test_retry_metrics()
+    test_concurrent_retries()
     
     println!("✅ Comprehensive retries, idempotency & backoff test suite completed");
 }

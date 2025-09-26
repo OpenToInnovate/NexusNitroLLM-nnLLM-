@@ -90,7 +90,7 @@ async fn test_python_gil_management() {
     
     for i in 0..5 {
         let client = client.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let result = client.chat_completions(
                 vec![], // Empty messages to trigger validation error quickly
                 None,
@@ -136,7 +136,7 @@ async fn test_nodejs_runtime_efficiency() {
     let mut handles = Vec::new();
     for i in 0..10 {
         let client = client.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let result = client.chat_completion(
                 vec![], // Empty messages
                 None,
@@ -150,7 +150,7 @@ async fn test_nodejs_runtime_efficiency() {
         handles.push(handle);
     }
     
-    let results = futures::future::join_all(handles).await;
+    let results = futures::future::join_all(handles);
     let elapsed = start.elapsed();
     
     // Should complete quickly due to singleton runtime
@@ -283,14 +283,14 @@ async fn test_concurrent_safety() {
         let mut handles = Vec::new();
         for i in 0..20 {
             let client = client.clone();
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let result = client.chat_completions(vec![], None, None, None, false);
                 (i, result.is_err())
             });
             handles.push(handle);
         }
         
-        let results = futures::future::join_all(handles).await;
+        let results = futures::future::join_all(handles);
         
         for (i, result) in results.iter().enumerate() {
             assert!(result.is_ok(), "Python concurrent task {} should complete", i);
@@ -315,14 +315,14 @@ async fn test_concurrent_safety() {
         let mut handles = Vec::new();
         for i in 0..20 {
             let client = client.clone();
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let result = client.chat_completion(vec![], None, None, None, false);
                 (i, result.is_err())
             });
             handles.push(handle);
         }
         
-        let results = futures::future::join_all(handles).await;
+        let results = futures::future::join_all(handles);
         
         for (i, result) in results.iter().enumerate() {
             assert!(result.is_ok(), "Node.js concurrent task {} should complete", i);

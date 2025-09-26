@@ -6,14 +6,13 @@
 use nexus_nitro_llm::{
     config::Config,
     server::{AppState, create_router},
-    schemas::{ChatCompletionRequest, Message},
+    schemas::Message,
 };
 use axum::{
     body::Body,
-    http::{Request, StatusCode, HeaderMap, HeaderValue, Method},
-    Router,
+    http::{Request, StatusCode, Method},
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use std::time::Duration;
 use tower::ServiceExt;
 
@@ -48,7 +47,7 @@ impl Default for ContextWindowTestConfig {
 /// # Create Test App State
 /// 
 /// Creates a test application state with mock configuration.
-fn create_test_app_state() -> AppState {
+async fn create_test_app_state() -> AppState {
     let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
@@ -57,7 +56,7 @@ fn create_test_app_state() -> AppState {
         ..Default::default()
     };
     
-    AppState::new(config)
+    AppState::new(config).await
 }
 
 /// # Create Long Message
@@ -90,11 +89,10 @@ fn create_long_conversation(message_count: usize, message_length: usize) -> Vec<
 /// # Test Single Message Length Limits
 /// 
 /// Tests handling of single messages that exceed length limits.
-#[tokio::test]
 async fn test_single_message_length_limits() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let config = ContextWindowTestConfig::default();
+    let _config = ContextWindowTestConfig::default();
     
     // Test message within limits
     let normal_message = create_long_message(1000);
@@ -147,11 +145,10 @@ async fn test_single_message_length_limits() {
 /// # Test Conversation Length Limits
 /// 
 /// Tests handling of conversations that exceed length limits.
-#[tokio::test]
 async fn test_conversation_length_limits() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let config = ContextWindowTestConfig::default();
+    let _config = ContextWindowTestConfig::default();
     
     // Test conversation within limits
     let normal_messages = create_long_conversation(10, 100);
@@ -194,11 +191,10 @@ async fn test_conversation_length_limits() {
 /// # Test Context Window Truncation
 /// 
 /// Tests that conversations are properly truncated when they exceed context window.
-#[tokio::test]
 async fn test_context_window_truncation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let config = ContextWindowTestConfig::default();
+    let _config = ContextWindowTestConfig::default();
     
     // Create a conversation that would exceed context window
     let message_length = (config.max_context_window as f64 * config.token_char_ratio) as usize / 10;
@@ -238,14 +234,14 @@ async fn test_context_window_truncation() {
 /// # Test Token Counting
 /// 
 /// Tests token counting accuracy for different content types.
-#[tokio::test]
 async fn test_token_counting() {
-    let config = ContextWindowTestConfig::default();
+    let _config = ContextWindowTestConfig::default();
     
     // Test different content types
+    let long_text = create_long_message(1000);
     let test_contents = vec![
         ("Simple text", "Hello, world!"),
-        ("Long text", &create_long_message(1000)),
+        ("Long text", &long_text),
         ("Unicode text", "Hello 🌍! This has émojis and spécial châractèrs. 你好世界！"),
         ("Code", "function hello() { return 'world'; }"),
         ("JSON", r#"{"key": "value", "array": [1, 2, 3]}"#),
@@ -269,9 +265,8 @@ async fn test_token_counting() {
 /// # Test Message Priority in Truncation
 /// 
 /// Tests that messages are truncated in the correct priority order.
-#[tokio::test]
 async fn test_message_priority_truncation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Create conversation with different message types
@@ -332,11 +327,10 @@ async fn test_message_priority_truncation() {
 /// # Test Streaming with Context Limits
 /// 
 /// Tests streaming behavior when context limits are reached.
-#[tokio::test]
 async fn test_streaming_with_context_limits() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let config = ContextWindowTestConfig::default();
+    let _config = ContextWindowTestConfig::default();
     
     // Create a long conversation for streaming
     let long_messages = create_long_conversation(50, 200);
@@ -377,9 +371,8 @@ async fn test_streaming_with_context_limits() {
 /// # Test Context Window with Tools
 /// 
 /// Tests context window handling when tools are involved.
-#[tokio::test]
 async fn test_context_window_with_tools() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Create conversation with tool calls
@@ -452,7 +445,6 @@ async fn test_context_window_with_tools() {
 /// # Test Context Window Metrics
 /// 
 /// Tests that context window metrics are properly collected.
-#[tokio::test]
 async fn test_context_window_metrics() {
     // Simulate context window metrics collection
     let mut context_metrics = std::collections::HashMap::new();
@@ -481,9 +473,8 @@ async fn test_context_window_metrics() {
 /// # Test Context Window with Different Models
 /// 
 /// Tests context window handling with different model configurations.
-#[tokio::test]
 async fn test_context_window_with_different_models() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     let models = vec![

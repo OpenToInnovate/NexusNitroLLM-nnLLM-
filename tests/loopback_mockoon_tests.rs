@@ -31,7 +31,7 @@ async fn wait_for_mockoon_server() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(500));
         attempts += 1;
     }
 
@@ -57,7 +57,7 @@ async fn wait_for_proxy_server() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        sleep(Duration::from_millis(1000)).await;
+        sleep(Duration::from_millis(1000))
         attempts += 1;
     }
 
@@ -100,7 +100,7 @@ async fn test_loopback_chat_completions() {
     }
 
     let client = Client::new();
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -111,7 +111,7 @@ async fn test_loopback_chat_completions() {
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .send()
@@ -141,7 +141,7 @@ async fn test_loopback_streaming_chat_completions() {
     }
 
     let client = Client::new();
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -153,7 +153,7 @@ async fn test_loopback_streaming_chat_completions() {
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .header("accept", "text/event-stream")
@@ -208,7 +208,7 @@ async fn test_loopback_error_handling() {
     let client = Client::new();
 
     // Test malformed JSON
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .header("content-type", "application/json")
         .body("invalid json")
@@ -219,13 +219,13 @@ async fn test_loopback_error_handling() {
     assert_eq!(response.status(), 400);
 
     // Test empty messages array (should trigger 400 from Mockoon)
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [],
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .send()
@@ -252,7 +252,7 @@ async fn test_loopback_different_models() {
     let models = vec!["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo-preview"];
 
     for model in models {
-        let request_body = json!({
+        let request_body = json!({;
             "model": model,
             "messages": [
                 {
@@ -263,7 +263,7 @@ async fn test_loopback_different_models() {
             "max_tokens": 50
         });
 
-        let response = client
+        let response = client;
             .post(&format!("{}/v1/chat/completions", PROXY_URL))
             .json(&request_body)
             .send()
@@ -292,7 +292,7 @@ async fn test_loopback_concurrent_requests() {
     }
 
     let client = Client::new();
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -309,8 +309,8 @@ async fn test_loopback_concurrent_requests() {
         let client_clone = client.clone();
         let request_body_clone = request_body.clone();
         
-        let handle = tokio::spawn(async move {
-            let response = client_clone
+        let handle = tokio::spawn(async move {;
+            let response = client_clone;
                 .post(&format!("{}/v1/chat/completions", PROXY_URL))
                 .json(&request_body_clone)
                 .header("x-request-id", format!("loopback-test-{}", i))
@@ -354,7 +354,7 @@ async fn test_loopback_large_request() {
     // Create a large message
     let large_content = "A".repeat(10000); // 10KB message
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -365,7 +365,7 @@ async fn test_loopback_large_request() {
         "max_tokens": 100
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .send()
@@ -393,7 +393,7 @@ async fn test_loopback_authentication_headers() {
     }
 
     let client = Client::new();
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -404,7 +404,7 @@ async fn test_loopback_authentication_headers() {
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .header("authorization", "Bearer test-token")
@@ -434,13 +434,13 @@ async fn test_loopback_timeout_handling() {
         return;
     }
 
-    let client = Client::builder()
+    let client = Client::builder();
         .timeout(Duration::from_secs(5)) // Short timeout
         .build()
         .unwrap();
 
     // Send request that will timeout (timeout_test=true triggers 35s delay in Mockoon)
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -452,11 +452,11 @@ async fn test_loopback_timeout_handling() {
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .send()
-        .await;
+        
 
     // Should get a timeout error
     match response {
@@ -498,7 +498,7 @@ async fn test_loopback_integration_comprehensive() {
     println!("✅ Models endpoint passed");
 
     // Test 3: Chat completion
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -509,7 +509,7 @@ async fn test_loopback_integration_comprehensive() {
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&request_body)
         .send()
@@ -520,7 +520,7 @@ async fn test_loopback_integration_comprehensive() {
     println!("✅ Chat completion passed");
 
     // Test 4: Streaming chat completion
-    let streaming_request_body = json!({
+    let streaming_request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -532,7 +532,7 @@ async fn test_loopback_integration_comprehensive() {
         "max_tokens": 50
     });
 
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", PROXY_URL))
         .json(&streaming_request_body)
         .header("accept", "text/event-stream")
@@ -560,7 +560,7 @@ async fn test_loopback_performance() {
     }
 
     let client = Client::new();
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -576,7 +576,7 @@ async fn test_loopback_performance() {
     let request_count = 10;
 
     for i in 0..request_count {
-        let response = client
+        let response = client;
             .post(&format!("{}/v1/chat/completions", PROXY_URL))
             .json(&request_body)
             .header("x-request-id", format!("perf-test-{}", i))
@@ -618,7 +618,7 @@ async fn test_loopback_backend_configurations() {
     let models = ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo-preview"];
     
     for model in models {
-        let request_body = json!({
+        let request_body = json!({;
             "model": model,
             "messages": [
                 {
@@ -629,7 +629,7 @@ async fn test_loopback_backend_configurations() {
             "max_tokens": 20
         });
 
-        let response = client
+        let response = client;
             .post(&format!("{}/v1/chat/completions", PROXY_URL))
             .json(&request_body)
             .send()

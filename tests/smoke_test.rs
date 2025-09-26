@@ -12,7 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     println!("🚀 Running minimal smoke test against {}", base_url);
     
-    let client = Client::builder()
+    let client = Client::builder();
         .timeout(Duration::from_secs(5))
         .build()?;
     
@@ -32,13 +32,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test 2: Chat completion
     println!("🧪 Testing chat completion...");
     let start = Instant::now();
-    let body = json!({
+    let body = json!({;
         "model": "test-model",
         "messages": [{"role": "user", "content": "Hello"}],
         "max_tokens": 10
     });
     
-    let response = client
+    let response = client;
         .post(&format!("{}/v1/chat/completions", base_url))
         .json(&body)
         .send()
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test 3: Cancellation (quick timeout)
     println!("🧪 Testing cancellation...");
     let start = Instant::now();
-    let short_client = Client::builder()
+    let short_client = Client::builder();
         .timeout(Duration::from_millis(100))
         .build()?;
     

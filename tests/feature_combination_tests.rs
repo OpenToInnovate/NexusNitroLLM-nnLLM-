@@ -265,7 +265,7 @@ mod tests {
         use nexus_nitro_llm::error::ProxyError;
 
         // Test that error handling works across all features
-        let errors = vec![
+        let errors = vec![;
             ProxyError::BadRequest("test".to_string()),
             ProxyError::Internal("test".to_string()),
             ProxyError::Upstream("timeout".to_string()),
@@ -297,13 +297,13 @@ mod tests {
             tool_call_id: None,
         };
 
-        let request = ChatCompletionRequest {
+        let request = ChatCompletionRequest {;
             messages: vec![message],
             model: Some("test".to_string()),
             ..Default::default()
         };
 
-        let response = ChatCompletionResponse {
+        let response = ChatCompletionResponse {;
             id: "test-id".to_string(),
             object: "chat.completion".to_string(),
             created: 1234567890,

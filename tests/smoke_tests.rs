@@ -158,14 +158,14 @@ impl SmokeTestClient {
             let timeout_duration = std::cmp::min(remaining_budget, Duration::from_millis(self.config.timeouts.read_ms));
 
             // Create request body
-            let body = json!({
+            let body = json!({;
                 "model": self.config.model,
                 "messages": messages,
                 "max_tokens": 50
             });
 
             // Make the request with timeout and cancellation
-            let result = self.make_request_with_cancellation(&body, timeout_duration, signal.clone()).await;
+            let result = self.make_request_with_cancellation(&body, timeout_duration, signal.clone());
 
             match result {
                 Ok(response) => {
@@ -226,7 +226,7 @@ impl SmokeTestClient {
                     break;
                 }
 
-                sleep(backoff_duration).await;
+                sleep(backoff_duration)
             }
         }
 
@@ -257,7 +257,7 @@ impl SmokeTestClient {
         // Execute request with timeout and cancellation
         let request_future = request.send();
 
-        let result = if let Some(cancel_token) = signal {
+        let result = if let Some(cancel_token) = signal {;
             tokio::select! {
                 response = request_future => response,
                 _ = cancel_token.cancelled() => {
@@ -278,7 +278,7 @@ impl SmokeTestClient {
                     200..=299 => Ok(response),
                     400..=499 => {
                         if status == 429 {
-                            let retry_after = response
+                            let retry_after = response;
                                 .headers()
                                 .get("retry-after")
                                 .and_then(|h| h.to_str().ok())
@@ -377,7 +377,7 @@ impl SmokeTestSuite {
         tokio::spawn({
             let token = cancel_token.clone();
             async move {
-                sleep(Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100))
                 token.cancel();
             }
         });
@@ -475,7 +475,7 @@ impl SmokeTestSuite {
     pub async fn run_all_tests(&self) -> Result<(), String> {
         println!("🚀 Running smoke test suite...");
         
-        let tests = vec![
+        let tests = vec![;
             ("Cancel during DNS", self.test_cancel_during_dns()),
             ("Cancel during connect", self.test_cancel_during_connect()),
             ("Deadline exceeded", self.test_deadline_exceeded()),
@@ -500,7 +500,7 @@ impl SmokeTestSuite {
             println!("🎉 All smoke tests passed!");
             Ok(())
         } else {
-            let error_msg = failed_tests
+            let error_msg = failed_tests;
                 .into_iter()
                 .map(|(name, error)| format!("{}: {}", name, error))
                 .collect::<Vec<_>>()
@@ -520,7 +520,7 @@ mod tests {
         let suite = SmokeTestSuite::new(config);
         
         // Only run tests if Mockoon is available
-        if let Ok(response) = reqwest::get("http://localhost:3000/health").await {
+        if let Ok(response) = reqwest::get("http://localhost:3000/health").await {;
             if response.status().is_success() {
                 match suite.run_all_tests().await {
                     Ok(_) => println!("All smoke tests passed"),

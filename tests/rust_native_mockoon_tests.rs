@@ -42,7 +42,7 @@ async fn wait_for_mockoon_server() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(500))
         attempts += 1;
     }
 
@@ -58,10 +58,10 @@ async fn test_native_rust_health_check() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/health")
         .method("GET")
         .body(Body::empty())
@@ -80,10 +80,10 @@ async fn test_native_rust_chat_completion() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -94,7 +94,7 @@ async fn test_native_rust_chat_completion() {
         "max_tokens": 50
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -118,10 +118,10 @@ async fn test_native_rust_streaming() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -133,7 +133,7 @@ async fn test_native_rust_streaming() {
         "max_tokens": 50
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -158,10 +158,10 @@ async fn test_native_rust_models_endpoint() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/models")
         .method("GET")
         .body(Body::empty())
@@ -183,11 +183,11 @@ async fn test_native_rust_error_handling() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
     // Test malformed JSON
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -198,13 +198,13 @@ async fn test_native_rust_error_handling() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     // Test empty messages array (should trigger 400 from Mockoon)
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [],
         "max_tokens": 50
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -224,13 +224,13 @@ async fn test_native_rust_different_models() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
     let models = vec!["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo-preview"];
 
     for model in models {
-        let request_body = json!({
+        let request_body = json!({;
             "model": model,
             "messages": [
                 {
@@ -241,7 +241,7 @@ async fn test_native_rust_different_models() {
             "max_tokens": 50
         });
 
-        let request = Request::builder()
+        let request = Request::builder();
             .uri("/v1/chat/completions")
             .method("POST")
             .header("content-type", "application/json")
@@ -262,10 +262,10 @@ async fn test_native_rust_concurrent_requests() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -284,8 +284,8 @@ async fn test_native_rust_concurrent_requests() {
         let app_clone = app.clone();
         let body_data_clone = body_data.clone();
         
-        let handle = tokio::spawn(async move {
-            let request = Request::builder()
+        let handle = tokio::spawn(async move {;
+            let request = Request::builder();
                 .uri("/v1/chat/completions")
                 .method("POST")
                 .header("content-type", "application/json")
@@ -320,13 +320,13 @@ async fn test_native_rust_large_request() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
     // Create a large message
     let large_content = "A".repeat(10000); // 10KB message
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -337,7 +337,7 @@ async fn test_native_rust_large_request() {
         "max_tokens": 100
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -394,13 +394,13 @@ async fn test_native_rust_integration_comprehensive() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
     println!("🧪 Running comprehensive native Rust integration tests...");
 
     // Test 1: Health check
-    let health_request = Request::builder()
+    let health_request = Request::builder();
         .uri("/health")
         .method("GET")
         .body(Body::empty())
@@ -411,7 +411,7 @@ async fn test_native_rust_integration_comprehensive() {
     println!("✅ Health check passed");
 
     // Test 2: Models list
-    let models_request = Request::builder()
+    let models_request = Request::builder();
         .uri("/v1/models")
         .method("GET")
         .body(Body::empty())
@@ -422,7 +422,7 @@ async fn test_native_rust_integration_comprehensive() {
     println!("✅ Models endpoint passed");
 
     // Test 3: Chat completion
-    let chat_request_body = json!({
+    let chat_request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -433,7 +433,7 @@ async fn test_native_rust_integration_comprehensive() {
         "max_tokens": 50
     });
 
-    let chat_request = Request::builder()
+    let chat_request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -445,7 +445,7 @@ async fn test_native_rust_integration_comprehensive() {
     println!("✅ Chat completion passed");
 
     // Test 4: Streaming chat completion
-    let streaming_request_body = json!({
+    let streaming_request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -457,7 +457,7 @@ async fn test_native_rust_integration_comprehensive() {
         "max_tokens": 50
     });
 
-    let streaming_request = Request::builder()
+    let streaming_request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -481,10 +481,10 @@ async fn test_native_rust_performance() {
     }
 
     let config = create_native_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "gpt-3.5-turbo",
         "messages": [
             {
@@ -502,7 +502,7 @@ async fn test_native_rust_performance() {
     let request_count = 10;
 
     for i in 0..request_count {
-        let request = Request::builder()
+        let request = Request::builder();
             .uri("/v1/chat/completions")
             .method("POST")
             .header("content-type", "application/json")

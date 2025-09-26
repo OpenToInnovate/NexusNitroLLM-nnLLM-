@@ -57,7 +57,7 @@ impl Default for MessageRulesTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -79,7 +79,7 @@ async fn test_message_role_validation() {
     
     // Test valid roles
     for role in &config.valid_roles {
-        let request_data = json!({
+        let request_data = json!({;
             "model": "test-model",
             "messages": [
                 {
@@ -89,7 +89,7 @@ async fn test_message_role_validation() {
             ]
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -102,7 +102,7 @@ async fn test_message_role_validation() {
     }
     
     // Test invalid roles
-    let invalid_roles = vec![
+    let invalid_roles = vec![;
         "invalid-role",
         "admin",
         "moderator",
@@ -114,7 +114,7 @@ async fn test_message_role_validation() {
     ];
     
     for role in invalid_roles {
-        let request_data = json!({
+        let request_data = json!({;
             "model": "test-model",
             "messages": [
                 {
@@ -124,7 +124,7 @@ async fn test_message_role_validation() {
             ]
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -147,7 +147,7 @@ async fn test_message_content_rules() {
     let config = MessageRulesTestConfig::default();
     
     // Test empty content
-    let empty_content_request = json!({
+    let empty_content_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -157,7 +157,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -169,7 +169,7 @@ async fn test_message_content_rules() {
     // assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test null content
-    let null_content_request = json!({
+    let null_content_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -179,7 +179,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -191,7 +191,7 @@ async fn test_message_content_rules() {
     
     // Test very long content
     let long_content = "x".repeat(config.max_message_length + 1);
-    let long_content_request = json!({
+    let long_content_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -201,7 +201,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -213,7 +213,7 @@ async fn test_message_content_rules() {
             response.status() == StatusCode::PAYLOAD_TOO_LARGE);
     
     // Test content with special characters
-    let special_content_request = json!({
+    let special_content_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -223,7 +223,7 @@ async fn test_message_content_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -243,7 +243,7 @@ async fn test_message_ordering_rules() {
     let app = create_router(app_state);
     
     // Test valid conversation flow: system -> user -> assistant
-    let valid_flow_request = json!({
+    let valid_flow_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -265,7 +265,7 @@ async fn test_message_ordering_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -276,7 +276,7 @@ async fn test_message_ordering_rules() {
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test invalid flow: assistant before user
-    let invalid_flow_request = json!({
+    let invalid_flow_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -290,7 +290,7 @@ async fn test_message_ordering_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -301,7 +301,7 @@ async fn test_message_ordering_rules() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test multiple system messages (should be invalid)
-    let multiple_system_request = json!({
+    let multiple_system_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -319,7 +319,7 @@ async fn test_message_ordering_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -339,7 +339,7 @@ async fn test_tool_message_rules() {
     let app = create_router(app_state);
     
     // Test valid tool message flow
-    let valid_tool_flow_request = json!({
+    let valid_tool_flow_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -377,7 +377,7 @@ async fn test_tool_message_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -388,7 +388,7 @@ async fn test_tool_message_rules() {
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test tool message without tool_call_id
-    let invalid_tool_message_request = json!({
+    let invalid_tool_message_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -398,7 +398,7 @@ async fn test_tool_message_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -409,7 +409,7 @@ async fn test_tool_message_rules() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test tool message with invalid tool_call_id
-    let invalid_tool_call_id_request = json!({
+    let invalid_tool_call_id_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -434,7 +434,7 @@ async fn test_tool_message_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -463,12 +463,12 @@ async fn test_conversation_length_limits() {
         }));
     }
     
-    let valid_length_request = json!({
+    let valid_length_request = json!({;
         "model": "test-model",
         "messages": messages
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -487,12 +487,12 @@ async fn test_conversation_length_limits() {
         }));
     }
     
-    let excessive_length_request = json!({
+    let excessive_length_request = json!({;
         "model": "test-model",
         "messages": long_messages
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -513,7 +513,7 @@ async fn test_message_name_field_rules() {
     let app = create_router(app_state);
     
     // Test valid name field
-    let valid_name_request = json!({
+    let valid_name_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -524,7 +524,7 @@ async fn test_message_name_field_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -535,7 +535,7 @@ async fn test_message_name_field_rules() {
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test invalid name field (non-string)
-    let invalid_name_request = json!({
+    let invalid_name_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -546,7 +546,7 @@ async fn test_message_name_field_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -557,7 +557,7 @@ async fn test_message_name_field_rules() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test empty name field
-    let empty_name_request = json!({
+    let empty_name_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -568,7 +568,7 @@ async fn test_message_name_field_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -588,7 +588,7 @@ async fn test_function_call_rules() {
     let app = create_router(app_state);
     
     // Test valid function call
-    let valid_function_call_request = json!({
+    let valid_function_call_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -602,7 +602,7 @@ async fn test_function_call_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -613,7 +613,7 @@ async fn test_function_call_rules() {
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test function call without name
-    let invalid_function_call_request = json!({
+    let invalid_function_call_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -626,7 +626,7 @@ async fn test_function_call_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -637,7 +637,7 @@ async fn test_function_call_rules() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test function call with invalid JSON arguments
-    let invalid_json_args_request = json!({
+    let invalid_json_args_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -651,7 +651,7 @@ async fn test_function_call_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -671,7 +671,7 @@ async fn test_message_content_type_rules() {
     let app = create_router(app_state);
     
     // Test string content
-    let string_content_request = json!({
+    let string_content_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -681,7 +681,7 @@ async fn test_message_content_type_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -692,7 +692,7 @@ async fn test_message_content_type_rules() {
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test array content (for multimodal)
-    let array_content_request = json!({
+    let array_content_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -713,7 +713,7 @@ async fn test_message_content_type_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -725,7 +725,7 @@ async fn test_message_content_type_rules() {
     // assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test invalid content type
-    let invalid_content_type_request = json!({
+    let invalid_content_type_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -735,7 +735,7 @@ async fn test_message_content_type_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -755,7 +755,7 @@ async fn test_system_message_rules() {
     let app = create_router(app_state);
     
     // Test system message at the beginning
-    let valid_system_request = json!({
+    let valid_system_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -769,7 +769,7 @@ async fn test_system_message_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -780,7 +780,7 @@ async fn test_system_message_rules() {
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test system message in the middle (should be invalid)
-    let invalid_system_position_request = json!({
+    let invalid_system_position_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -798,7 +798,7 @@ async fn test_system_message_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -809,7 +809,7 @@ async fn test_system_message_rules() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test system message with empty content
-    let empty_system_request = json!({
+    let empty_system_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -823,7 +823,7 @@ async fn test_system_message_rules() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -842,15 +842,15 @@ async fn test_chat_message_rules_integration_suite() {
     println!("🚀 Starting comprehensive chat message rules test suite");
     
     // Test all message rule scenarios
-    test_message_role_validation().await;
-    test_message_content_rules().await;
-    test_message_ordering_rules().await;
-    test_tool_message_rules().await;
-    test_conversation_length_limits().await;
-    test_message_name_field_rules().await;
-    test_function_call_rules().await;
-    test_message_content_type_rules().await;
-    test_system_message_rules().await;
+    test_message_role_validation()
+    test_message_content_rules()
+    test_message_ordering_rules()
+    test_tool_message_rules()
+    test_conversation_length_limits()
+    test_message_name_field_rules()
+    test_function_call_rules()
+    test_message_content_type_rules()
+    test_system_message_rules()
     
     println!("✅ Comprehensive chat message rules test suite completed");
 }

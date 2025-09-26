@@ -47,7 +47,7 @@ mod tests {
         assert!(result.unwrap_err().contains("Host cannot be empty"));
 
         // Test valid hosts
-        let valid_hosts = [
+        let valid_hosts = [;
             "0.0.0.0",
             "127.0.0.1",
             "localhost",
@@ -81,7 +81,7 @@ mod tests {
         assert!(result.unwrap_err().contains("backend URL cannot be empty"));
 
         // Test invalid URL schemes
-        let invalid_schemes = [
+        let invalid_schemes = [;
             "ftp://example.com",
             "file:///path/to/file",
             "ssh://user@host",
@@ -95,7 +95,7 @@ mod tests {
         }
 
         // Test valid URLs
-        let valid_urls = [
+        let valid_urls = [;
             "http://localhost:8000",
             "https://api.openai.com/v1",
             "http://192.168.1.100:8080",
@@ -116,7 +116,7 @@ mod tests {
         assert!(result.is_err(), "URL without host should be invalid");
 
         // Test malformed URLs
-        let malformed_urls = [
+        let malformed_urls = [;
             "not-a-url",
             "http:/",
             "https://",
@@ -142,7 +142,7 @@ mod tests {
         assert!(result.unwrap_err().contains("Model ID cannot be empty"));
 
         // Test valid model IDs
-        let valid_models = [
+        let valid_models = [;
             "gpt-3.5-turbo",
             "gpt-4",
             "claude-3-sonnet",
@@ -161,7 +161,7 @@ mod tests {
         }
 
         // Test invalid model IDs (with special characters)
-        let invalid_models = [
+        let invalid_models = [;
             "model with spaces",
             "model@domain.com",
             "model#123",
@@ -194,7 +194,7 @@ mod tests {
         }
 
         // Test invalid adapters
-        let invalid_adapters = [
+        let invalid_adapters = [;
             "invalid",
             "vllm", // Note: vllm might not be in the valid list
             "azure",
@@ -228,7 +228,7 @@ mod tests {
         }
 
         // Test invalid environments
-        let invalid_environments = [
+        let invalid_environments = [;
             "dev",
             "prod",
             "test",
@@ -378,14 +378,14 @@ mod tests {
         assert!(result.unwrap_err().contains("CORS headers cannot be empty"));
 
         // Test various valid CORS configurations
-        let valid_methods = [
+        let valid_methods = [;
             "GET",
             "GET,POST",
             "GET,POST,PUT,DELETE,OPTIONS",
             "*",
         ];
 
-        let valid_headers = [
+        let valid_headers = [;
             "*",
             "Content-Type",
             "Authorization,Content-Type,X-Requested-With",
@@ -456,7 +456,7 @@ mod tests {
         assert!(result.is_ok(), "Batching without streaming should be valid but may warn");
 
         // Test various feature combinations
-        let feature_combinations = [
+        let feature_combinations = [;
             (true, true, true, true, true, true),    // all enabled
             (false, false, false, false, false, false), // all disabled
             (true, false, true, false, true, false), // alternating
@@ -494,7 +494,7 @@ mod tests {
         // Test with edge case URLs
         config.backend_token = None;
 
-        let url_test_cases = [
+        let url_test_cases = [;
             ("https://api.openai.com/v1/chat/completions", "gpt-3.5-turbo"),
             ("https://test.openai.azure.com/openai/deployments/gpt-35-turbo/chat/completions", "gpt-35-turbo"),
             ("https://bedrock-runtime.us-east-1.amazonaws.com/", "anthropic.claude-3-sonnet-20240229-v1:0"),
@@ -510,7 +510,7 @@ mod tests {
     #[test]
     fn test_environment_variable_edge_cases() {
         // Test with various environment variable values
-        let test_cases = [
+        let test_cases = [;
             ("PORT", "0", false),  // invalid port
             ("PORT", "65536", true), // port too high - but u16 will wrap
             ("PORT", "abc", true),   // non-numeric - will use default
@@ -528,7 +528,7 @@ mod tests {
             // Manually apply the problematic values since env parsing happens in parse_args
             match *var {
                 "PORT" => {
-                    if let Ok(port) = value.parse::<u16>() {
+                    if let Ok(port) = value.parse::<u16>() {;
                         config.port = port;
                     }
                 }

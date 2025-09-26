@@ -53,7 +53,7 @@ impl Default for ObservabilityTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -99,7 +99,7 @@ async fn test_metrics_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/metrics")
         .body(Body::empty())
@@ -135,7 +135,7 @@ async fn test_health_check_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/health")
         .body(Body::empty())
@@ -170,7 +170,7 @@ async fn test_error_metrics_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/errors")
         .body(Body::empty())
@@ -205,7 +205,7 @@ async fn test_performance_metrics_endpoint() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/performance")
         .body(Body::empty())
@@ -244,7 +244,7 @@ async fn test_metrics_collection() {
     for i in 0..5 {
         let request_data = create_test_request();
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -257,7 +257,7 @@ async fn test_metrics_collection() {
     }
     
     // Check metrics endpoint after generating some load
-    let metrics_request = Request::builder()
+    let metrics_request = Request::builder();
         .method(Method::GET)
         .uri("/metrics")
         .body(Body::empty())
@@ -289,7 +289,7 @@ async fn test_health_status_monitoring() {
     let app = create_router(app_state);
     
     // Test health status endpoint
-    let health_request = Request::builder()
+    let health_request = Request::builder();
         .method(Method::GET)
         .uri("/health")
         .body(Body::empty())
@@ -321,7 +321,7 @@ async fn test_error_tracking() {
     let app = create_router(app_state);
     
     // Generate some errors
-    let error_requests = vec![
+    let error_requests = vec![;
         // Invalid request
         json!({
             "model": "test-model",
@@ -341,7 +341,7 @@ async fn test_error_tracking() {
     ];
     
     for (i, error_request) in error_requests.iter().enumerate() {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -354,7 +354,7 @@ async fn test_error_tracking() {
     }
     
     // Check error metrics endpoint
-    let error_metrics_request = Request::builder()
+    let error_metrics_request = Request::builder();
         .method(Method::GET)
         .uri("/errors")
         .body(Body::empty())
@@ -391,7 +391,7 @@ async fn test_performance_monitoring() {
     for i in 0..10 {
         let request_data = create_test_request();
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -407,7 +407,7 @@ async fn test_performance_monitoring() {
     println!("Total time for 10 requests: {:?}", elapsed);
     
     // Check performance metrics endpoint
-    let perf_metrics_request = Request::builder()
+    let perf_metrics_request = Request::builder();
         .method(Method::GET)
         .uri("/performance")
         .body(Body::empty())
@@ -440,7 +440,7 @@ async fn test_metrics_format_validation() {
     let config = ObservabilityTestConfig::default();
     
     for endpoint in &config.metrics_endpoints {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::GET)
             .uri(endpoint)
             .body(Body::empty())
@@ -475,7 +475,7 @@ async fn test_metrics_authentication() {
     let app = create_router(app_state);
     
     // Test metrics endpoint without authentication
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/metrics")
         .body(Body::empty())
@@ -490,7 +490,7 @@ async fn test_metrics_authentication() {
     let mut headers = HeaderMap::new();
     headers.insert("authorization", HeaderValue::from_static("Bearer test-token"));
     
-    let auth_request = Request::builder()
+    let auth_request = Request::builder();
         .method(Method::GET)
         .uri("/metrics")
         .headers(headers)
@@ -515,7 +515,7 @@ async fn test_metrics_rate_limiting() {
     
     // Make multiple requests to metrics endpoint
     for i in 0..20 {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::GET)
             .uri("/metrics")
             .header("x-request-id", format!("rate-limit-test-{}", i))
@@ -529,7 +529,7 @@ async fn test_metrics_rate_limiting() {
         
         // Add small delay to prevent overwhelming
         if i % 5 == 0 {
-            tokio::time::sleep(Duration::from_millis(10)).await;
+            tokio::time::sleep(Duration::from_millis(10))
         }
     }
     
@@ -544,17 +544,17 @@ async fn test_observability_metrics_integration_suite() {
     println!("🚀 Starting comprehensive observability & metrics test suite");
     
     // Test all observability scenarios
-    test_metrics_endpoint().await;
-    test_health_check_endpoint().await;
-    test_error_metrics_endpoint().await;
-    test_performance_metrics_endpoint().await;
-    test_metrics_collection().await;
-    test_health_status_monitoring().await;
-    test_error_tracking().await;
-    test_performance_monitoring().await;
-    test_metrics_format_validation().await;
-    test_metrics_authentication().await;
-    test_metrics_rate_limiting().await;
+    test_metrics_endpoint()
+    test_health_check_endpoint()
+    test_error_metrics_endpoint()
+    test_performance_metrics_endpoint()
+    test_metrics_collection()
+    test_health_status_monitoring()
+    test_error_tracking()
+    test_performance_monitoring()
+    test_metrics_format_validation()
+    test_metrics_authentication()
+    test_metrics_rate_limiting()
     
     println!("✅ Comprehensive observability & metrics test suite completed");
 }

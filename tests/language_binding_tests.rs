@@ -112,7 +112,7 @@ mod tests {
         use nexus_nitro_llm::schemas::{ChatCompletionRequest, ChatCompletionResponse, Message};
 
         // Test that core schema types work properly for bindings
-        let message = Message {
+        let message = Message {;
             role: "user".to_string(),
             content: Some("Hello".to_string()),
             name: None,
@@ -121,7 +121,7 @@ mod tests {
             tool_call_id: None,
         };
 
-        let request = ChatCompletionRequest {
+        let request = ChatCompletionRequest {;
             messages: vec![message],
             model: Some("test-model".to_string()),
             max_tokens: Some(100),
@@ -136,7 +136,7 @@ mod tests {
         assert_eq!(request.temperature, Some(0.7));
 
         // Test response structure
-        let response = ChatCompletionResponse {
+        let response = ChatCompletionResponse {;
             id: "test-id".to_string(),
             object: "chat.completion".to_string(),
             created: 1234567890,
@@ -217,7 +217,7 @@ mod tests {
         use nexus_nitro_llm::error::ProxyError;
 
         // Test that error types can be properly handled in bindings
-        let errors = vec![
+        let errors = vec![;
             ProxyError::BadRequest("test".to_string()),
             ProxyError::Upstream("test".to_string()),
             ProxyError::Internal("test".to_string()),
@@ -240,7 +240,7 @@ mod tests {
         use serde_json;
 
         // Test that schemas can be serialized/deserialized for bindings
-        let message = Message {
+        let message = Message {;
             role: "user".to_string(),
             content: Some("Hello, world!".to_string()),
             name: None,
@@ -249,7 +249,7 @@ mod tests {
             tool_call_id: None,
         };
 
-        let request = ChatCompletionRequest {
+        let request = ChatCompletionRequest {;
             messages: vec![message],
             model: Some("test-model".to_string()),
             max_tokens: Some(100),
@@ -281,7 +281,7 @@ mod tests {
 
         for i in 0..5 {
             let config_clone = Arc::clone(&config);
-            let handle = thread::spawn(move || {
+            let handle = thread::spawn(move || {;
                 let result = config_clone.validate();
                 assert!(result.is_ok(), "Config validation should work in thread {}", i);
                 config_clone.port

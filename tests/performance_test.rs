@@ -121,7 +121,7 @@ async fn create_performance_test_app() -> Router {
     config.backend_url = "http://localhost:8000".to_string();
     config.model_id = "perf-test-model".to_string();
     
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     
     Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -133,11 +133,11 @@ async fn create_performance_test_app() -> Router {
 /// Measures latency characteristics under various load conditions.
 #[tokio::test]
 async fn test_latency_performance() {
-    let app = create_performance_test_app().await;
+    let app = create_performance_test_app();
     
     println!("⏱️ Starting latency performance test");
     
-    let test_scenarios = vec![
+    let test_scenarios = vec![;
         (1, "Single request"),
         (10, "Light load"),
         (50, "Medium load"),
@@ -158,11 +158,11 @@ async fn test_latency_performance() {
             let app = app.clone();
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let _permit = permit;
                 let request_start = Instant::now();
                 
-                let request_body = json!({
+                let request_body = json!({;
                     "model": "perf-test-model",
                     "messages": [
                         {"role": "user", "content": format!("Latency test request {}", i)}
@@ -230,7 +230,7 @@ async fn test_latency_performance() {
         assert!(throughput > 0.0, "No throughput achieved in {}", scenario_name);
         
         // Latency assertions (adjust thresholds based on your requirements)
-        if let Some(p95) = percentiles.get("P95") {
+        if let Some(p95) = percentiles.get("P95") {;
             assert!(p95.as_millis() < 5000, "P95 latency too high: {:?}", p95);
         }
     }
@@ -243,7 +243,7 @@ async fn test_latency_performance() {
 /// Measures maximum throughput capabilities under sustained load.
 #[tokio::test]
 async fn test_throughput_performance() {
-    let app = create_performance_test_app().await;
+    let app = create_performance_test_app();
     
     println!("🚀 Starting throughput performance test");
     
@@ -262,12 +262,12 @@ async fn test_throughput_performance() {
         let app = app.clone();
         let permit = semaphore.clone().acquire_owned().await.unwrap();
         
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let _permit = permit;
             let request_start = Instant::now();
             let request_id = request_counter;
             
-            let request_body = json!({
+            let request_body = json!({;
                 "model": "perf-test-model",
                 "messages": [
                     {"role": "user", "content": format!("Throughput test request {}", request_id)}
@@ -276,7 +276,7 @@ async fn test_throughput_performance() {
                 "stream": request_id % 3 == 0 // 1/3 streaming requests
             });
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -297,20 +297,20 @@ async fn test_throughput_performance() {
         request_counter += 1;
         
         // Small delay to control request rate
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(10))
     }
     
     // Wait for all requests to complete
     let wait_timeout = Duration::from_secs(60);
-    let completed_handles = timeout(wait_timeout, async {
+    let completed_handles = timeout(wait_timeout, async {;
         let mut completed = Vec::new();
         for handle in handles {
-            if let Ok(result) = handle.await {
+            if let Ok(result) = handle.await {;
                 completed.push(result);
             }
         }
         completed
-    }).await;
+    })
     
     let total_duration = start_time.elapsed();
     
@@ -362,7 +362,7 @@ async fn test_throughput_performance() {
 /// Measures streaming-specific performance characteristics.
 #[tokio::test]
 async fn test_streaming_performance() {
-    let app = create_performance_test_app().await;
+    let app = create_performance_test_app();
     
     println!("🌊 Starting streaming performance test");
     
@@ -377,11 +377,11 @@ async fn test_streaming_performance() {
         let app = app.clone();
         let permit = semaphore.clone().acquire_owned().await.unwrap();
         
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let _permit = permit;
             let request_start = Instant::now();
             
-            let request_body = json!({
+            let request_body = json!({;
                 "model": "perf-test-model",
                 "messages": [
                     {"role": "user", "content": format!("Streaming test request {}", i)}
@@ -390,7 +390,7 @@ async fn test_streaming_performance() {
                 "stream": true
             });
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -442,7 +442,7 @@ async fn test_streaming_performance() {
     let throughput = metrics.calculate_throughput(total_duration);
     let success_rate = metrics.success_rate();
     let percentiles = metrics.calculate_percentiles();
-    let avg_data_lines = if metrics.success_count > 0 {
+    let avg_data_lines = if metrics.success_count > 0 {;
         total_data_lines as f64 / metrics.success_count as f64
     } else {
         0.0
@@ -476,12 +476,12 @@ async fn test_streaming_performance() {
 /// Measures memory usage patterns during various operations.
 #[tokio::test]
 async fn test_memory_usage_performance() {
-    let app = create_performance_test_app().await;
+    let app = create_performance_test_app();
     
     println!("🧠 Starting memory usage performance test");
     
     // Test memory usage with different request patterns
-    let test_scenarios = vec![
+    let test_scenarios = vec![;
         (10, "Small batch"),
         (50, "Medium batch"),
         (100, "Large batch"),
@@ -498,10 +498,10 @@ async fn test_memory_usage_performance() {
             let app = app.clone();
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let _permit = permit;
                 
-                let request_body = json!({
+                let request_body = json!({;
                     "model": "perf-test-model",
                     "messages": [
                         {"role": "user", "content": format!("Memory test request {}", i)}
@@ -549,7 +549,7 @@ async fn test_memory_usage_performance() {
         }
         
         let duration = start_time.elapsed();
-        let avg_response_size = if success_count > 0 {
+        let avg_response_size = if success_count > 0 {;
             total_response_size as f64 / success_count as f64
         } else {
             0.0
@@ -574,7 +574,7 @@ async fn test_memory_usage_performance() {
 /// Measures connection pooling and reuse efficiency.
 #[tokio::test]
 async fn test_connection_efficiency() {
-    let app = create_performance_test_app().await;
+    let app = create_performance_test_app();
     
     println!("🔗 Starting connection efficiency test");
     
@@ -585,7 +585,7 @@ async fn test_connection_efficiency() {
     for i in 0..request_count {
         let request_start = Instant::now();
         
-        let request_body = json!({
+        let request_body = json!({;
             "model": "perf-test-model",
             "messages": [
                 {"role": "user", "content": format!("Connection test request {}", i)}
@@ -594,7 +594,7 @@ async fn test_connection_efficiency() {
             "stream": false
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -613,13 +613,13 @@ async fn test_connection_efficiency() {
         let _body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
         
         // Small delay between requests
-        tokio::time::sleep(Duration::from_millis(50)).await;
+        tokio::time::sleep(Duration::from_millis(50))
     }
     
     // Analyze connection efficiency
     if response_times.len() >= 2 {
         let first_request_time = response_times[0];
-        let subsequent_avg: Duration = response_times[1..]
+        let subsequent_avg: Duration = response_times[1..];
             .iter()
             .sum::<Duration>()
             / (response_times.len() - 1) as u32;

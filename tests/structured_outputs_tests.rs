@@ -53,7 +53,7 @@ impl Default for StructuredOutputsTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -100,7 +100,7 @@ async fn test_json_mode() {
     let app = create_router(app_state);
     
     // Test JSON mode request
-    let json_request = json!({
+    let json_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -113,7 +113,7 @@ async fn test_json_mode() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -148,7 +148,7 @@ async fn test_json_schema_validation() {
     let app = create_router(app_state);
     
     // Test with JSON schema
-    let schema_request = json!({
+    let schema_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -186,7 +186,7 @@ async fn test_json_schema_validation() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -223,7 +223,7 @@ async fn test_invalid_json_schema() {
     let app = create_router(app_state);
     
     // Test with invalid JSON schema
-    let invalid_schema_request = json!({
+    let invalid_schema_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -247,7 +247,7 @@ async fn test_invalid_json_schema() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -271,7 +271,7 @@ async fn test_xml_format() {
     let app = create_router(app_state);
     
     // Test XML format request
-    let xml_request = json!({
+    let xml_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -284,7 +284,7 @@ async fn test_xml_format() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -319,7 +319,7 @@ async fn test_yaml_format() {
     let app = create_router(app_state);
     
     // Test YAML format request
-    let yaml_request = json!({
+    let yaml_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -332,7 +332,7 @@ async fn test_yaml_format() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -367,7 +367,7 @@ async fn test_csv_format() {
     let app = create_router(app_state);
     
     // Test CSV format request
-    let csv_request = json!({
+    let csv_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -380,7 +380,7 @@ async fn test_csv_format() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -417,7 +417,7 @@ async fn test_streaming_with_structured_outputs() {
     let app = create_router(app_state);
     
     // Test streaming with JSON mode
-    let streaming_json_request = json!({
+    let streaming_json_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -431,7 +431,7 @@ async fn test_streaming_with_structured_outputs() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -469,7 +469,7 @@ async fn test_response_format_validation() {
     let app = create_router(app_state);
     
     // Test invalid response format type
-    let invalid_format_request = json!({
+    let invalid_format_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -482,7 +482,7 @@ async fn test_response_format_validation() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -495,7 +495,7 @@ async fn test_response_format_validation() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test missing response format type
-    let missing_type_request = json!({
+    let missing_type_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -513,7 +513,7 @@ async fn test_response_format_validation() {
         }
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -537,7 +537,7 @@ async fn test_structured_outputs_with_tools() {
     let app = create_router(app_state);
     
     // Test structured output with tool calls
-    let tool_request = json!({
+    let tool_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -559,7 +559,7 @@ async fn test_structured_outputs_with_tools() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -627,16 +627,16 @@ async fn test_structured_outputs_integration_suite() {
     println!("🚀 Starting comprehensive structured outputs & JSON mode test suite");
     
     // Test all structured output scenarios
-    test_json_mode().await;
-    test_json_schema_validation().await;
-    test_invalid_json_schema().await;
-    test_xml_format().await;
-    test_yaml_format().await;
-    test_csv_format().await;
-    test_streaming_with_structured_outputs().await;
-    test_response_format_validation().await;
-    test_structured_outputs_with_tools().await;
-    test_response_format_metrics().await;
+    test_json_mode()
+    test_json_schema_validation()
+    test_invalid_json_schema()
+    test_xml_format()
+    test_yaml_format()
+    test_csv_format()
+    test_streaming_with_structured_outputs()
+    test_response_format_validation()
+    test_structured_outputs_with_tools()
+    test_response_format_metrics()
     
     println!("✅ Comprehensive structured outputs & JSON mode test suite completed");
 }

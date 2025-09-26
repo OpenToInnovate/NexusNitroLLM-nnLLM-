@@ -62,7 +62,7 @@ impl Default for AuthTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 async fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -106,12 +106,12 @@ fn create_test_request() -> ChatCompletionRequest {
 /// Tests authentication for the chat completions endpoint.
 async fn test_chat_completions_auth() {
     let config = AuthTestConfig::default();
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Test with valid API keys
     for api_key in &config.valid_api_keys {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -128,7 +128,7 @@ async fn test_chat_completions_auth() {
     
     // Test with invalid API keys
     for api_key in &config.invalid_api_keys {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -145,7 +145,7 @@ async fn test_chat_completions_auth() {
     }
     
     // Test without authorization header
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -164,11 +164,11 @@ async fn test_chat_completions_auth() {
 /// 
 /// Tests header validation for the chat completions endpoint.
 async fn test_chat_completions_headers() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Test with invalid content type
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "text/plain")
@@ -188,7 +188,7 @@ async fn test_chat_completions_headers() {
     println!("✅ Invalid content type rejected");
     
     // Test with valid headers
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -210,11 +210,11 @@ async fn test_chat_completions_headers() {
 /// Tests authentication for the health endpoint.
 
 async fn test_health_endpoint_auth() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Health endpoint should be accessible without authentication
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/health")
         .header("authorization", "Bearer sk-test-key")
@@ -234,11 +234,11 @@ async fn test_health_endpoint_auth() {
 /// Tests authentication for the UI proxy endpoint.
 
 async fn test_ui_proxy_auth() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // UI proxy should be accessible without authentication
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::GET)
         .uri("/v1/ui")
         .header("authorization", "Bearer sk-test-key")
@@ -263,16 +263,16 @@ async fn test_ui_proxy_auth() {
 /// Tests authentication for the login endpoint.
 
 async fn test_login_endpoint_auth() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Login endpoint should be accessible without authentication
-    let login_data = json!({
+    let login_data = json!({;
         "username": "test-user",
         "password": "test-password"
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/login")
         .header("content-type", "application/json")
@@ -295,13 +295,13 @@ async fn test_login_endpoint_auth() {
 /// Tests CORS header handling.
 
 async fn test_cors_headers() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     let endpoints = vec!["/v1/chat/completions", "/health", "/v1/ui"];
     
     for endpoint in endpoints {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::OPTIONS)
             .uri(endpoint)
             .header("origin", "https://example.com")
@@ -326,12 +326,12 @@ async fn test_cors_headers() {
 /// Tests rate limiting header handling.
 
 async fn test_rate_limiting_headers() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Make multiple requests to test rate limiting
     for i in 0..10 {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -357,10 +357,10 @@ async fn test_rate_limiting_headers() {
 /// Tests custom header handling.
 
 async fn test_custom_headers() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -383,13 +383,13 @@ async fn test_custom_headers() {
 /// Tests header size limit handling.
 
 async fn test_header_size_limits() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Test with very large header value
     let large_value = "x".repeat(8192); // 8KB header
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -415,11 +415,11 @@ async fn test_header_size_limits() {
 /// Tests malformed header handling.
 
 async fn test_malformed_headers() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Test with malformed authorization header
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -435,7 +435,7 @@ async fn test_malformed_headers() {
     println!("✅ Malformed authorization header rejected");
     
     // Test with empty headers
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "")
@@ -463,7 +463,7 @@ async fn test_nodejs_binding_auth() {
     // This test would run Node.js tests via subprocess
     // For now, we'll test the patterns that should be implemented
     
-    let _test_script = r#"
+    let _test_script = r#";
         const { createClient, createMessage } = require('../../nodejs');
         
         async function testAuth() {
@@ -527,7 +527,7 @@ async fn test_python_binding_auth() {
     // This test would run Python tests via subprocess
     // For now, we'll test the patterns that should be implemented
     
-    let _test_script = r#"
+    let _test_script = r#";
         import asyncio
         import nexus_nitro_llm
         
@@ -592,7 +592,7 @@ async fn test_react_frontend_auth() {
     // This test would verify React frontend authentication patterns
     // For now, we'll document the expected behavior
     
-    let expected_patterns = vec![
+    let expected_patterns = vec![;
         "React app should handle API key storage securely",
         "React app should include Authorization header in requests",
         "React app should handle 401/403 responses gracefully",
@@ -616,11 +616,11 @@ async fn test_react_frontend_auth() {
 /// Tests that all language bindings handle headers consistently.
 
 async fn test_cross_language_header_consistency() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Test that all bindings should handle these headers the same way
-    let test_headers = vec![
+    let test_headers = vec![;
         ("authorization", "Bearer sk-test-key"),
         ("content-type", "application/json"),
         ("user-agent", "test-client/1.0"),
@@ -629,7 +629,7 @@ async fn test_cross_language_header_consistency() {
     ];
     
     for (header_name, header_value) in test_headers {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -652,11 +652,11 @@ async fn test_cross_language_header_consistency() {
 /// Tests that error messages are appropriate for each language binding.
 
 async fn test_language_specific_error_messages() {
-    let app_state = create_test_app_state().await;
+    let app_state = create_test_app_state();
     let app = create_router(app_state);
     
     // Test unauthorized request
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -690,33 +690,33 @@ async fn test_auth_headers_integration_suite() {
     
     // Test Rust/loopback authentication scenarios
     println!("🔧 Testing Rust/loopback bindings...");
-    test_chat_completions_auth().await;
-    test_health_endpoint_auth().await;
-    test_ui_proxy_auth().await;
-    test_login_endpoint_auth().await;
+    test_chat_completions_auth()
+    test_health_endpoint_auth()
+    test_ui_proxy_auth()
+    test_login_endpoint_auth()
     
     // Test Rust/loopback header scenarios
-    test_chat_completions_headers().await;
-    test_cors_headers().await;
-    test_rate_limiting_headers().await;
-    test_custom_headers().await;
-    test_header_size_limits().await;
-    test_malformed_headers().await;
+    test_chat_completions_headers()
+    test_cors_headers()
+    test_rate_limiting_headers()
+    test_custom_headers()
+    test_header_size_limits()
+    test_malformed_headers()
     
     // Test cross-language consistency
     println!("🌐 Testing cross-language consistency...");
-    test_cross_language_header_consistency().await;
-    test_language_specific_error_messages().await;
+    test_cross_language_header_consistency()
+    test_language_specific_error_messages()
     
     // Test other language bindings (would be implemented with actual subprocess calls)
     println!("📦 Testing Node.js bindings...");
-    test_nodejs_binding_auth().await;
+    test_nodejs_binding_auth()
     
     println!("🐍 Testing Python bindings...");
-    test_python_binding_auth().await;
+    test_python_binding_auth()
     
     println!("⚛️  Testing React frontend...");
-    test_react_frontend_auth().await;
+    test_react_frontend_auth()
     
     println!("✅ Comprehensive authentication and headers test suite completed");
     println!("All 4 language bindings tested for auth & header handling");

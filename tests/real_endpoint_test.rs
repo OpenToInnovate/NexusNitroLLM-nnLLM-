@@ -24,7 +24,7 @@ async fn test_real_endpoint() {
     let client = Client::new();
 
     // Test different types of requests
-    let test_cases = vec![
+    let test_cases = vec![;
         json!({
             "model": model,
             "messages": [
@@ -69,8 +69,8 @@ async fn test_real_endpoint() {
         println!("Request: {}", serde_json::to_string_pretty(test_case).unwrap());
 
         // Test direct call to OpenAI-compatible endpoint
-        let direct_response = test_direct_openai_call(&client, &lightllm_url, &token, test_case)
-            .await;
+        let direct_response = test_direct_openai_call(&client, &lightllm_url, &token, test_case);
+            
 
         match direct_response {
             Ok(response) => {

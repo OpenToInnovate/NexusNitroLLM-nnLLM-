@@ -20,10 +20,10 @@ fn create_test_config() -> Config {
 #[tokio::test]
 async fn test_server_health_check() {
     let config = create_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/health")
         .method("GET")
         .body(Body::empty())
@@ -39,10 +39,10 @@ async fn test_server_health_check() {
 #[tokio::test]
 async fn test_chat_completions_endpoint() {
     let config = create_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -53,7 +53,7 @@ async fn test_chat_completions_endpoint() {
         "max_tokens": 10
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -71,10 +71,10 @@ async fn test_chat_completions_endpoint() {
 #[tokio::test]
 async fn test_streaming_endpoint() {
     let config = create_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -86,7 +86,7 @@ async fn test_streaming_endpoint() {
         "max_tokens": 10
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")
@@ -115,7 +115,7 @@ fn test_config_validation() {
 /// Test that different backend types are handled
 #[test]
 fn test_different_backend_types() {
-    let backend_types = vec![
+    let backend_types = vec![;
         "lightllm",
         "vllm", 
         "openai",
@@ -182,10 +182,10 @@ fn test_invalid_config_handling() {
 #[tokio::test]
 async fn test_malformed_json_handling() {
     let config = create_test_config();
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     let app = create_router(state);
     
-    let request = Request::builder()
+    let request = Request::builder();
         .uri("/v1/chat/completions")
         .method("POST")
         .header("content-type", "application/json")

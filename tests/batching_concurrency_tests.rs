@@ -51,7 +51,7 @@ impl Default for BatchingTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 async fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -106,10 +106,10 @@ async fn test_concurrent_requests() {
     
     for i in 0..config.batch_size {
         let app_clone = app.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let request_data = create_test_request(i);
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -125,7 +125,7 @@ async fn test_concurrent_requests() {
     }
     
     // Wait for all requests to complete
-    let results = join_all(handles).await;
+    let results = join_all(handles);
     let elapsed = start_time.elapsed();
     
     // Verify all requests completed
@@ -164,8 +164,8 @@ async fn test_request_batching() {
             let app_clone = app.clone();
             let request_data = create_test_request(batch * config.batch_size + i);
             
-            let handle = tokio::spawn(async move {
-                let request = Request::builder()
+            let handle = tokio::spawn(async move {;
+                let request = Request::builder();
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -184,14 +184,14 @@ async fn test_request_batching() {
         
         // Add delay between batches
         if batch < 2 {
-            tokio::time::sleep(Duration::from_millis(config.batch_delay_ms)).await;
+            tokio::time::sleep(Duration::from_millis(config.batch_delay_ms))
         }
     }
     
     // Wait for all batches to complete
     let mut all_results = vec![];
     for batch_handles in batch_handles {
-        let batch_results = join_all(batch_handles).await;
+        let batch_results = join_all(batch_handles);
         all_results.extend(batch_results);
     }
     
@@ -227,10 +227,10 @@ async fn test_high_concurrency_load() {
     
     for i in 0..high_concurrency {
         let app_clone = app.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let request_data = create_test_request(i);
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -246,7 +246,7 @@ async fn test_high_concurrency_load() {
     }
     
     // Wait for all requests to complete
-    let results = join_all(handles).await;
+    let results = join_all(handles);
     let elapsed = start_time.elapsed();
     
     // Verify all requests completed
@@ -314,10 +314,10 @@ async fn test_request_queuing() {
         // Create requests that will be queued
         for i in 0..queue_size {
             let app_clone = app.clone();
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let request_data = create_test_request(i);
                 
-                let request = Request::builder()
+                let request = Request::builder();
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -333,7 +333,7 @@ async fn test_request_queuing() {
         }
         
         // Wait for all requests to complete
-        let results = join_all(handles).await;
+        let results = join_all(handles);
         let elapsed = start_time.elapsed();
         
         // Verify all requests completed
@@ -371,10 +371,10 @@ async fn test_connection_pooling() {
         // Create requests that will use the connection pool
         for i in 0..pool_size {
             let app_clone = app.clone();
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let request_data = create_test_request(i);
                 
-                let request = Request::builder()
+                let request = Request::builder();
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -390,7 +390,7 @@ async fn test_connection_pooling() {
         }
         
         // Wait for all requests to complete
-        let results = join_all(handles).await;
+        let results = join_all(handles);
         let elapsed = start_time.elapsed();
         
         // Verify all requests completed
@@ -415,7 +415,7 @@ async fn test_request_prioritization() {
     let app = create_router(app_state);
     
     // Test different priority levels
-    let priorities = vec![
+    let priorities = vec![;
         ("high", 1),
         ("medium", 2),
         ("low", 3),
@@ -427,10 +427,10 @@ async fn test_request_prioritization() {
     for (priority_name, priority_value) in priorities {
         for i in 0..5 {
             let app_clone = app.clone();
-            let handle = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {;
                 let request_data = create_test_request(i);
                 
-                let request = Request::builder()
+                let request = Request::builder();
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -448,7 +448,7 @@ async fn test_request_prioritization() {
     }
     
     // Wait for all requests to complete
-    let results = join_all(handles).await;
+    let results = join_all(handles);
     let elapsed = start_time.elapsed();
     
     // Verify all requests completed
@@ -491,10 +491,10 @@ async fn test_resource_exhaustion_handling() {
     
     for i in 0..exhaustion_limit {
         let app_clone = app.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let request_data = create_test_request(i);
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -510,12 +510,12 @@ async fn test_resource_exhaustion_handling() {
         
         // Add small delay to prevent overwhelming the system
         if i % 100 == 0 {
-            tokio::time::sleep(Duration::from_millis(10)).await;
+            tokio::time::sleep(Duration::from_millis(10))
         }
     }
     
     // Wait for all requests to complete (with timeout)
-    let result = timeout(Duration::from_secs(30), join_all(handles)).await;
+    let result = timeout(Duration::from_secs(30), join_all(handles));
     
     match result {
         Ok(results) => {
@@ -596,14 +596,14 @@ async fn test_batching_concurrency_integration_suite() {
     println!("🚀 Starting comprehensive batching & concurrency test suite");
     
     // Test all batching and concurrency scenarios
-    test_concurrent_requests().await;
-    test_request_batching().await;
-    test_high_concurrency_load().await;
-    test_request_queuing().await;
-    test_connection_pooling().await;
-    test_request_prioritization().await;
-    test_resource_exhaustion_handling().await;
-    test_batching_metrics().await;
+    test_concurrent_requests()
+    test_request_batching()
+    test_high_concurrency_load()
+    test_request_queuing()
+    test_connection_pooling()
+    test_request_prioritization()
+    test_resource_exhaustion_handling()
+    test_batching_metrics()
     
     println!("✅ Comprehensive batching & concurrency test suite completed");
 }

@@ -15,7 +15,7 @@ use std::pin::pin;
 
 #[tokio::test]
 async fn test_connection_pooling() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         base_url: "http://localhost:3000".to_string(),
         timeout: Duration::from_secs(5),
         max_concurrent: 10,
@@ -34,9 +34,9 @@ async fn test_connection_pooling() {
     
     for i in 0..5 {
         let client = client.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let deadline = Instant::now() + Duration::from_secs(10);
-            let messages = vec![serde_json::json!({
+            let messages = vec![serde_json::json!({;
                 "role": "user",
                 "content": format!("Test message {}", i)
             })];
@@ -61,7 +61,7 @@ async fn test_connection_pooling() {
 
 #[tokio::test]
 async fn test_deadline_propagation() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         timeout: Duration::from_secs(30),
         ..Default::default()
     };
@@ -70,13 +70,13 @@ async fn test_deadline_propagation() {
     
     // Test with very short deadline
     let deadline = Instant::now() + Duration::from_millis(100);
-    let messages = vec![serde_json::json!({
+    let messages = vec![serde_json::json!({;
         "role": "user",
         "content": "Test"
     })];
     
     let start = Instant::now();
-    let result = client.chat_completion(messages, deadline).await;
+    let result = client.chat_completion(messages, deadline);
     let elapsed = start.elapsed();
     
     // Should fail due to deadline, not timeout
@@ -88,7 +88,7 @@ async fn test_deadline_propagation() {
 
 #[tokio::test]
 async fn test_concurrency_limit() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         max_concurrent: 2,
         timeout: Duration::from_secs(10),
         ..Default::default()
@@ -101,15 +101,15 @@ async fn test_concurrency_limit() {
     
     for i in 0..5 {
         let client = client.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let deadline = Instant::now() + Duration::from_secs(15);
-            let messages = vec![serde_json::json!({
+            let messages = vec![serde_json::json!({;
                 "role": "user",
                 "content": format!("Concurrency test {}", i)
             })];
             
             let start = Instant::now();
-            let result = client.chat_completion(messages, deadline).await;
+            let result = client.chat_completion(messages, deadline);
             let elapsed = start.elapsed();
             
             println!("Request {} completed in {:?}", i, elapsed);
@@ -129,7 +129,7 @@ async fn test_concurrency_limit() {
 
 #[tokio::test]
 async fn test_retry_logic() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         retry_attempts: 3,
         retry_base_delay: Duration::from_millis(50),
         max_retry_delay: Duration::from_millis(200),
@@ -140,13 +140,13 @@ async fn test_retry_logic() {
     let client = HighPerformanceClient::new(config).unwrap();
     
     let deadline = Instant::now() + Duration::from_secs(10);
-    let messages = vec![serde_json::json!({
+    let messages = vec![serde_json::json!({;
         "role": "user",
         "content": "Retry test"
     })];
     
     let start = Instant::now();
-    let result = client.chat_completion(messages, deadline).await;
+    let result = client.chat_completion(messages, deadline);
     let elapsed = start.elapsed();
     
     println!("Retry test completed in {:?}, result: {:?}", elapsed, result.is_ok());
@@ -157,7 +157,7 @@ async fn test_retry_logic() {
 
 #[tokio::test]
 async fn test_streaming_backpressure() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         timeout: Duration::from_secs(10),
         ..Default::default()
     };
@@ -165,20 +165,20 @@ async fn test_streaming_backpressure() {
     let client = HighPerformanceClient::new(config).unwrap();
     
     let deadline = Instant::now() + Duration::from_secs(15);
-    let messages = vec![serde_json::json!({
+    let messages = vec![serde_json::json!({;
         "role": "user",
         "content": "Streaming test"
     })];
     
     let start = Instant::now();
-    let stream_result = client.stream_chat_completion(messages, deadline).await;
+    let stream_result = client.stream_chat_completion(messages, deadline);
     
-    if let Ok(stream) = stream_result {
+    if let Ok(stream) = stream_result {;
         let mut stream = pin!(stream);
         let mut chunk_count = 0;
         let mut total_bytes = 0;
         
-        while let Some(chunk_result) = stream.next().await {
+        while let Some(chunk_result) = stream.next().await {;
             match chunk_result {
                 Ok(chunk) => {
                     chunk_count += 1;
@@ -187,7 +187,7 @@ async fn test_streaming_backpressure() {
                     
                     // Simulate slow consumer to test backpressure
                     if chunk_count % 3 == 0 {
-                        tokio::time::sleep(Duration::from_millis(10)).await;
+                        tokio::time::sleep(Duration::from_millis(10))
                     }
                 }
                 Err(e) => {
@@ -210,7 +210,7 @@ async fn test_streaming_backpressure() {
 
 #[tokio::test]
 async fn test_memory_efficiency() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         max_concurrent: 5,
         timeout: Duration::from_secs(5),
         ..Default::default()
@@ -223,9 +223,9 @@ async fn test_memory_efficiency() {
     
     for i in 0..20 {
         let client = client.clone();
-        let handle = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {;
             let deadline = Instant::now() + Duration::from_secs(10);
-            let messages = vec![serde_json::json!({
+            let messages = vec![serde_json::json!({;
                 "role": "user",
                 "content": format!("Memory test {}", i)
             })];
@@ -238,7 +238,7 @@ async fn test_memory_efficiency() {
     // Wait for all requests
     let mut success_count = 0;
     for handle in handles {
-        if let Ok(Ok(_)) = handle.await {
+        if let Ok(Ok(_)) = handle.await {;
             success_count += 1;
         }
     }
@@ -251,7 +251,7 @@ async fn test_memory_efficiency() {
 
 #[tokio::test]
 async fn test_error_handling() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         timeout: Duration::from_secs(2),
         retry_attempts: 1,
         ..Default::default()
@@ -260,7 +260,7 @@ async fn test_error_handling() {
     let _client = HighPerformanceClient::new(config).unwrap();
     
     // Test with invalid URL to trigger connection errors
-    let invalid_client = HighPerformanceClient::new(ClientConfig {
+    let invalid_client = HighPerformanceClient::new(ClientConfig {;
         base_url: "http://invalid-host:9999".to_string(),
         timeout: Duration::from_millis(500),
         retry_attempts: 1,
@@ -268,13 +268,13 @@ async fn test_error_handling() {
     }).unwrap();
     
     let deadline = Instant::now() + Duration::from_secs(5);
-    let messages = vec![serde_json::json!({
+    let messages = vec![serde_json::json!({;
         "role": "user",
         "content": "Error test"
     })];
     
     let start = Instant::now();
-    let result = invalid_client.chat_completion(messages, deadline).await;
+    let result = invalid_client.chat_completion(messages, deadline);
     let elapsed = start.elapsed();
     
     // Should fail quickly due to connection error
@@ -286,7 +286,7 @@ async fn test_error_handling() {
 
 #[tokio::test]
 async fn test_performance_benchmark() {
-    let config = ClientConfig {
+    let config = ClientConfig {;
         max_concurrent: 10,
         timeout: Duration::from_secs(5),
         ..Default::default()
@@ -303,12 +303,12 @@ async fn test_performance_benchmark() {
         let start = Instant::now();
         
         let deadline = Instant::now() + Duration::from_secs(8);
-        let messages = vec![serde_json::json!({
+        let messages = vec![serde_json::json!({;
             "role": "user",
             "content": format!("Benchmark test {}", i)
         })];
         
-        let result = client.chat_completion(messages, deadline).await;
+        let result = client.chat_completion(messages, deadline);
         let elapsed = start.elapsed();
         
         if result.is_ok() {

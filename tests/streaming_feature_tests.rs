@@ -21,7 +21,7 @@ mod tests {
         // assert_eq!(config.max_concurrent_streams, 100);
 
         // Test custom config
-        // let custom_config = EnhancedStreamingConfig {
+        // let custom_config = EnhancedStreamingConfig {;
         //     enabled: true,
         //     max_concurrent_streams: 50,
         // };
@@ -330,14 +330,14 @@ mod tests {
         use nexus_nitro_llm::schemas::{ChatCompletionChunk, StreamDelta};
 
         // Test streaming-specific schema types
-        let delta = StreamDelta {
+        let delta = StreamDelta {;
             role: Some("assistant".to_string()),
             content: Some("Hello".to_string()),
             function_call: None,
             tool_calls: None,
         };
 
-        let chunk = ChatCompletionChunk {
+        let chunk = ChatCompletionChunk {;
             id: "test-chunk".to_string(),
             object: "chat.completion.chunk".to_string(),
             created: 1234567890,

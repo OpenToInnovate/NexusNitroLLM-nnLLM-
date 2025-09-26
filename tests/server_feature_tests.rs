@@ -27,7 +27,7 @@ mod tests {
     #[test]
     #[cfg(feature = "server")]
     fn test_high_performance_client_config() {
-        let config = ClientConfig {
+        let config = ClientConfig {;
             base_url: "http://test:8080".to_string(),
             timeout: Duration::from_secs(60),
             max_concurrent: 16,
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn test_config_server_specific_validation() {
         // Create a valid config to start with
-        let mut config = Config {
+        let mut config = Config {;
             port: 8080,
             host: "0.0.0.0".to_string(),
             backend_url: "http://localhost:8000".to_string(),

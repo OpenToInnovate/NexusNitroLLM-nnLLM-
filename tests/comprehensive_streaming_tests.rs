@@ -49,7 +49,7 @@ impl Default for StreamingTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -98,7 +98,7 @@ async fn test_sse_format_validation() {
     
     let request_data = create_streaming_test_request();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -135,7 +135,7 @@ async fn test_sse_chunk_format() {
     
     let request_data = create_streaming_test_request();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -149,7 +149,7 @@ async fn test_sse_chunk_format() {
         // In a real test, we would read the stream and validate chunks
         // For now, we'll test the expected format patterns
         
-        let expected_chunk_patterns = vec![
+        let expected_chunk_patterns = vec![;
             "data: ",
             "event: ",
             "id: ",
@@ -178,13 +178,13 @@ async fn test_streaming_error_handling() {
     let app = create_router(app_state);
     
     // Test streaming with invalid request
-    let invalid_request = json!({
+    let invalid_request = json!({;
         "model": "test-model",
         "messages": [], // Empty messages should cause error
         "stream": true
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -198,13 +198,13 @@ async fn test_streaming_error_handling() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test streaming with unsupported model
-    let unsupported_model_request = json!({
+    let unsupported_model_request = json!({;
         "model": "unsupported-model",
         "messages": [{"role": "user", "content": "Hello"}],
         "stream": true
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -232,7 +232,7 @@ async fn test_streaming_performance() {
     
     let start_time = std::time::Instant::now();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -269,7 +269,7 @@ async fn test_streaming_with_parameters() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let parameter_tests = vec![
+    let parameter_tests = vec![;
         // High temperature
         json!({
             "model": "test-model",
@@ -301,7 +301,7 @@ async fn test_streaming_with_parameters() {
     ];
     
     for (i, request_data) in parameter_tests.iter().enumerate() {
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -325,7 +325,7 @@ async fn test_streaming_with_tools() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let tool_request = json!({
+    let tool_request = json!({;
         "model": "test-model",
         "messages": [{"role": "user", "content": "What's the weather like?"}],
         "stream": true,
@@ -350,7 +350,7 @@ async fn test_streaming_with_tools() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -386,10 +386,10 @@ async fn test_streaming_cancellation() {
     let request_data = create_streaming_test_request();
     
     // Test with short timeout to simulate cancellation
-    let result = timeout(
+    let result = timeout(;
         Duration::from_millis(100),
         async {
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -399,7 +399,7 @@ async fn test_streaming_cancellation() {
             
             app.clone().oneshot(request).await
         }
-    ).await;
+    )
     
     match result {
         Ok(response) => {
@@ -428,7 +428,7 @@ async fn test_streaming_metrics() {
     
     // Simulate some streaming requests
     for i in 0..5 {
-        let adapter = nexus_nitro_llm::adapters::Adapter::LightLLM(
+        let adapter = nexus_nitro_llm::adapters::Adapter::LightLLM(;
             nexus_nitro_llm::adapters::LightLLMAdapter {
                 url: format!("http://localhost:{}", 8000 + i),
                 model_id: "test-model".to_string(),
@@ -438,7 +438,7 @@ async fn test_streaming_metrics() {
         let request = create_streaming_test_request();
         
         // This will fail in test environment, but should update metrics
-        let _ = handler.handle_streaming_request(request, adapter).await;
+        let _ = handler.handle_streaming_request(request, adapter);
     }
     
     // Verify metrics were updated
@@ -456,7 +456,7 @@ async fn test_streaming_content_types() {
     let app_state = create_test_app_state();
     let app = create_router(app_state);
     
-    let content_type_tests = vec![
+    let content_type_tests = vec![;
         ("text/event-stream", "Standard SSE"),
         ("text/event-stream; charset=utf-8", "SSE with charset"),
         ("application/x-ndjson", "Newline-delimited JSON"),
@@ -465,7 +465,7 @@ async fn test_streaming_content_types() {
     for (content_type, description) in content_type_tests {
         let request_data = create_streaming_test_request();
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -489,14 +489,14 @@ async fn test_streaming_buffer_management() {
     let app = create_router(app_state);
     
     // Test with large response to stress buffer management
-    let large_request = json!({
+    let large_request = json!({;
         "model": "test-model",
         "messages": [{"role": "user", "content": "Generate a very long response with many details and examples"}],
         "stream": true,
         "max_tokens": 2000
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -527,7 +527,7 @@ async fn test_streaming_error_recovery() {
     let app = create_router(app_state);
     
     // Test with invalid backend URL to trigger error
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://invalid-backend:9999".to_string(),
         model_id: "test-model".to_string(),
@@ -540,7 +540,7 @@ async fn test_streaming_error_recovery() {
     
     let request_data = create_streaming_test_request();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -573,17 +573,17 @@ async fn test_comprehensive_streaming_integration_suite() {
     println!("🚀 Starting comprehensive streaming test suite");
     
     // Test all streaming scenarios
-    test_sse_format_validation().await;
-    test_sse_chunk_format().await;
-    test_streaming_error_handling().await;
-    test_streaming_performance().await;
-    test_streaming_with_parameters().await;
-    test_streaming_with_tools().await;
-    test_streaming_cancellation().await;
-    test_streaming_metrics().await;
-    test_streaming_content_types().await;
-    test_streaming_buffer_management().await;
-    test_streaming_error_recovery().await;
+    test_sse_format_validation()
+    test_sse_chunk_format()
+    test_streaming_error_handling()
+    test_streaming_performance()
+    test_streaming_with_parameters()
+    test_streaming_with_tools()
+    test_streaming_cancellation()
+    test_streaming_metrics()
+    test_streaming_content_types()
+    test_streaming_buffer_management()
+    test_streaming_error_recovery()
     
     println!("✅ Comprehensive streaming test suite completed");
 }

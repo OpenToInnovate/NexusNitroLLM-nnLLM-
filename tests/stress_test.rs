@@ -41,7 +41,7 @@ async fn create_stress_test_app() -> Router {
     config.backend_url = "http://localhost:8000".to_string();
     config.model_id = "stress-test-model".to_string();
     
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     
     Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -55,7 +55,7 @@ async fn create_stress_test_app() -> Router {
 #[tokio::test]
 #[ignore] // Run with: cargo test --test stress_test -- --ignored
 async fn test_high_concurrency_stress() {
-    let app = create_stress_test_app().await;
+    let app = create_stress_test_app();
     
     // Extreme concurrency test
     let concurrent_requests = 1000;
@@ -75,9 +75,9 @@ async fn test_high_concurrency_stress() {
             let _permit = permit; // Hold the permit
             
             // Wait for all tasks to be ready
-            barrier.wait().await;
+            barrier.wait()
             
-            let request_body = json!({
+            let request_body = json!({;
                 "model": "stress-test-model",
                 "messages": [
                     {"role": "user", "content": format!("Stress test request {}", i)}
@@ -86,7 +86,7 @@ async fn test_high_concurrency_stress() {
                 "stream": i % 2 == 0 // Mix of streaming and non-streaming
             });
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -106,9 +106,9 @@ async fn test_high_concurrency_stress() {
     }
     
     // Wait for all requests to complete with extended timeout
-    let results = timeout(Duration::from_secs(120), async {
+    let results = timeout(Duration::from_secs(120), async {;
         let mut completed = 0;
-        while let Some(result) = handles.join_next().await {
+        while let Some(result) = handles.join_next().await {;
             result.unwrap();
             completed += 1;
             if completed % 100 == 0 {
@@ -116,7 +116,7 @@ async fn test_high_concurrency_stress() {
             }
         }
         completed
-    }).await;
+    })
     
     let duration = start_time.elapsed();
     
@@ -145,7 +145,7 @@ async fn test_high_concurrency_stress() {
 #[tokio::test]
 #[ignore] // Run with: cargo test --test stress_test -- --ignored
 async fn test_memory_stress() {
-    let app = create_stress_test_app().await;
+    let app = create_stress_test_app();
     
     println!("🧠 Starting memory stress test");
     
@@ -162,7 +162,7 @@ async fn test_memory_stress() {
             let app = app.clone();
             
             handles.spawn(async move {
-                let request_body = json!({
+                let request_body = json!({;
                     "model": "stress-test-model",
                     "messages": [
                         {"role": "user", "content": format!("Memory stress round {} request {}", round, i)}
@@ -171,7 +171,7 @@ async fn test_memory_stress() {
                     "stream": true // Use streaming for more memory-intensive test
                 });
                 
-                let request = Request::builder()
+                let request = Request::builder();
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -195,14 +195,14 @@ async fn test_memory_stress() {
         }
         
         // Wait for round to complete
-        let round_results = timeout(Duration::from_secs(30), async {
+        let round_results = timeout(Duration::from_secs(30), async {;
             let mut completed = 0;
-            while let Some(result) = handles.join_next().await {
+            while let Some(result) = handles.join_next().await {;
                 result.unwrap();
                 completed += 1;
             }
             completed
-        }).await;
+        })
         
         match round_results {
             Ok(completed) => {
@@ -215,7 +215,7 @@ async fn test_memory_stress() {
         }
         
         // Small delay between rounds to allow cleanup
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(100))
     }
     
     println!("✅ Memory stress test completed successfully");
@@ -228,7 +228,7 @@ async fn test_memory_stress() {
 #[tokio::test]
 #[ignore] // Run with: cargo test --test stress_test -- --ignored
 async fn test_long_running_connections() {
-    let app = create_stress_test_app().await;
+    let app = create_stress_test_app();
     
     println!("⏱️ Starting long-running connection test");
     
@@ -241,7 +241,7 @@ async fn test_long_running_connections() {
     let mut error_count = 0;
     
     while start_time.elapsed() < test_duration {
-        let request_body = json!({
+        let request_body = json!({;
             "model": "stress-test-model",
             "messages": [
                 {"role": "user", "content": format!("Long running test request {}", request_count)}
@@ -250,7 +250,7 @@ async fn test_long_running_connections() {
             "stream": request_count % 3 == 0 // Mix of request types
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -286,7 +286,7 @@ async fn test_long_running_connections() {
                 request_count, rate, success_count, error_count);
         }
         
-        tokio::time::sleep(request_interval).await;
+        tokio::time::sleep(request_interval)
     }
     
     let total_duration = start_time.elapsed();
@@ -312,7 +312,7 @@ async fn test_long_running_connections() {
 #[tokio::test]
 #[ignore] // Run with: cargo test --test stress_test -- --ignored
 async fn test_resource_exhaustion_recovery() {
-    let app = create_stress_test_app().await;
+    let app = create_stress_test_app();
     
     println!("💥 Starting resource exhaustion recovery test");
     
@@ -329,7 +329,7 @@ async fn test_resource_exhaustion_recovery() {
         handles.spawn(async move {
             let _permit = permit;
             
-            let request_body = json!({
+            let request_body = json!({;
                 "model": "stress-test-model",
                 "messages": [
                     {"role": "user", "content": format!("Pressure request {}", i)}
@@ -338,7 +338,7 @@ async fn test_resource_exhaustion_recovery() {
                 "stream": true
             });
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -346,14 +346,14 @@ async fn test_resource_exhaustion_recovery() {
                 .unwrap();
             
             // Don't wait for all to complete - create pressure
-            let _ = timeout(Duration::from_secs(1), app.oneshot(request)).await;
+            let _ = timeout(Duration::from_secs(1), app.oneshot(request));
             
             i
         });
     }
     
     // Wait a bit for pressure to build
-    tokio::time::sleep(Duration::from_secs(2)).await;
+    tokio::time::sleep(Duration::from_secs(2))
     
     // Phase 2: Test recovery with new requests
     println!("  Phase 2: Testing recovery");
@@ -364,7 +364,7 @@ async fn test_resource_exhaustion_recovery() {
         let app = app.clone();
         
         recovery_handles.spawn(async move {
-            let request_body = json!({
+            let request_body = json!({;
                 "model": "stress-test-model",
                 "messages": [
                     {"role": "user", "content": format!("Recovery request {}", i)}
@@ -373,7 +373,7 @@ async fn test_resource_exhaustion_recovery() {
                 "stream": false
             });
             
-            let request = Request::builder()
+            let request = Request::builder();
                 .method(Method::POST)
                 .uri("/v1/chat/completions")
                 .header("content-type", "application/json")
@@ -390,14 +390,14 @@ async fn test_resource_exhaustion_recovery() {
     }
     
     // Wait for recovery requests to complete
-    let recovery_results = timeout(Duration::from_secs(30), async {
+    let recovery_results = timeout(Duration::from_secs(30), async {;
         let mut completed = 0;
-        while let Some(result) = recovery_handles.join_next().await {
+        while let Some(result) = recovery_handles.join_next().await {;
             result.unwrap();
             completed += 1;
         }
         completed
-    }).await;
+    })
     
     match recovery_results {
         Ok(completed) => {
@@ -411,14 +411,14 @@ async fn test_resource_exhaustion_recovery() {
     
     // Phase 3: Clean up pressure requests
     println!("  Phase 3: Cleaning up pressure requests");
-    let cleanup_results = timeout(Duration::from_secs(30), async {
+    let cleanup_results = timeout(Duration::from_secs(30), async {;
         let mut completed = 0;
-        while let Some(result) = handles.join_next().await {
+        while let Some(result) = handles.join_next().await {;
             result.unwrap();
             completed += 1;
         }
         completed
-    }).await;
+    })
     
     match cleanup_results {
         Ok(completed) => {
@@ -438,12 +438,12 @@ async fn test_resource_exhaustion_recovery() {
 /// scenarios and continue providing service.
 #[tokio::test]
 async fn test_failure_recovery() {
-    let app = create_stress_test_app().await;
+    let app = create_stress_test_app();
     
     println!("🔄 Starting failure recovery test");
     
     // Test various failure scenarios
-    let failure_scenarios: Vec<(&str, StatusCode)> = vec![
+    let failure_scenarios: Vec<(&str, StatusCode)> = vec![;
         // Invalid JSON
         ("invalid json", StatusCode::BAD_REQUEST),
         // Malformed request
@@ -457,7 +457,7 @@ async fn test_failure_recovery() {
     for (i, (invalid_body, expected_status)) in failure_scenarios.iter().enumerate() {
         println!("  Testing failure scenario {}", i + 1);
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -470,7 +470,7 @@ async fn test_failure_recovery() {
         assert_eq!(response.status(), *expected_status);
         
         // Verify service is still responsive
-        let test_request_body = json!({
+        let test_request_body = json!({;
             "model": "stress-test-model",
             "messages": [
                 {"role": "user", "content": "Recovery test"}
@@ -479,7 +479,7 @@ async fn test_failure_recovery() {
             "stream": false
         });
         
-        let test_request = Request::builder()
+        let test_request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -502,7 +502,7 @@ async fn test_failure_recovery() {
 #[tokio::test]
 #[ignore] // Run with: cargo test --test stress_test -- --ignored
 async fn test_burst_traffic_handling() {
-    let app = create_stress_test_app().await;
+    let app = create_stress_test_app();
     
     println!("🌊 Starting burst traffic handling test");
     
@@ -521,7 +521,7 @@ async fn test_burst_traffic_handling() {
             let app = app.clone();
             
             handles.spawn(async move {
-                let request_body = json!({
+                let request_body = json!({;
                     "model": "stress-test-model",
                     "messages": [
                         {"role": "user", "content": format!("Burst {} request {}", burst, i)}
@@ -530,7 +530,7 @@ async fn test_burst_traffic_handling() {
                     "stream": i % 2 == 0
                 });
                 
-                let request = Request::builder()
+                let request = Request::builder();
                     .method(Method::POST)
                     .uri("/v1/chat/completions")
                     .header("content-type", "application/json")
@@ -550,14 +550,14 @@ async fn test_burst_traffic_handling() {
         }
         
         // Wait for burst to complete
-        let burst_results = timeout(Duration::from_secs(30), async {
+        let burst_results = timeout(Duration::from_secs(30), async {;
             let mut completed = 0;
-            while let Some(result) = handles.join_next().await {
+            while let Some(result) = handles.join_next().await {;
                 result.unwrap();
                 completed += 1;
             }
             completed
-        }).await;
+        })
         
         let burst_duration = start_time.elapsed();
         
@@ -577,7 +577,7 @@ async fn test_burst_traffic_handling() {
         
         // Wait between bursts
         if burst < num_bursts - 1 {
-            tokio::time::sleep(burst_interval).await;
+            tokio::time::sleep(burst_interval)
         }
     }
     

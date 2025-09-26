@@ -25,7 +25,7 @@ async fn create_streaming_test_app(lightllm_url: String) -> Router {
     config.backend_url = lightllm_url;
     config.model_id = "test-model".to_string();
 
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
     nexus_nitro_llm::routes::create_router(state)
 }
 
@@ -34,10 +34,10 @@ async fn create_streaming_test_app(lightllm_url: String) -> Router {
 /// Tests that the proxy correctly handles streaming requests and returns proper SSE format.
 #[tokio::test]
 async fn test_streaming_request_format() {
-    let mock_server = MockServer::start().await;
-    let app = create_streaming_test_app(mock_server.uri()).await;
+    let mock_server = MockServer::start();
+    let app = create_streaming_test_app(mock_server.uri());
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {"role": "user", "content": "What is the capital of France?"}
@@ -46,7 +46,7 @@ async fn test_streaming_request_format() {
         "stream": true
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -87,7 +87,7 @@ async fn test_streaming_request_format() {
 /// Ensures that regular (non-streaming) requests still work correctly.
 #[tokio::test]
 async fn test_non_streaming_request() {
-    let mock_server = MockServer::start().await;
+    let mock_server = MockServer::start();
 
     // Set up mock for non-streaming request
     Mock::given(method("POST"))
@@ -104,11 +104,11 @@ async fn test_non_streaming_request() {
                 "text": "The capital of France is Paris."
             })))
         .mount(&mock_server)
-        .await;
+        
 
-    let app = create_streaming_test_app(mock_server.uri()).await;
+    let app = create_streaming_test_app(mock_server.uri());
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {"role": "user", "content": "What is the capital of France?"}
@@ -117,7 +117,7 @@ async fn test_non_streaming_request() {
         "stream": false
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -138,7 +138,7 @@ async fn test_non_streaming_request() {
 /// Tests that requests without the stream parameter default to non-streaming.
 #[tokio::test]
 async fn test_missing_stream_parameter() {
-    let mock_server = MockServer::start().await;
+    let mock_server = MockServer::start();
 
     // Set up mock for non-streaming request
     Mock::given(method("POST"))
@@ -155,11 +155,11 @@ async fn test_missing_stream_parameter() {
                 "text": "The capital of France is Paris."
             })))
         .mount(&mock_server)
-        .await;
+        
 
-    let app = create_streaming_test_app(mock_server.uri()).await;
+    let app = create_streaming_test_app(mock_server.uri());
     
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {"role": "user", "content": "What is the capital of France?"}
@@ -168,7 +168,7 @@ async fn test_missing_stream_parameter() {
         // No stream parameter
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -189,7 +189,7 @@ async fn test_missing_stream_parameter() {
 /// Tests that adapters correctly report their streaming support capabilities.
 #[tokio::test]
 async fn test_adapter_streaming_support() {
-    let mock_server = MockServer::start().await;
+    let mock_server = MockServer::start();
     let mut config = Config::for_test();
     config.port = 8080;
     config.backend_url = mock_server.uri();
@@ -209,7 +209,7 @@ async fn test_sse_event_format() {
     use nexus_nitro_llm::schemas::{ChatCompletionChunk, StreamChoice, StreamDelta};
     
     // Create a sample chunk
-    let chunk = ChatCompletionChunk {
+    let chunk = ChatCompletionChunk {;
         id: "chatcmpl-test".to_string(),
         object: "chat.completion.chunk".to_string(),
         created: 1234567890,
@@ -248,7 +248,7 @@ async fn test_sse_event_format() {
 async fn test_streaming_error_handling() {
     use nexus_nitro_llm::schemas::{StreamingError, ErrorDetails};
     
-    let error = StreamingError {
+    let error = StreamingError {;
         error: ErrorDetails {
             message: "Test error".to_string(),
             r#type: "test_error".to_string(),

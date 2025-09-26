@@ -57,7 +57,7 @@ impl Default for SecurityTestConfig {
 /// 
 /// Creates a test application state with mock configuration.
 fn create_test_app_state() -> AppState {
-    let config = Config {
+    let config = Config {;
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
         model_id: "test-model".to_string(),
@@ -105,7 +105,7 @@ async fn test_input_sanitization() {
     let config = SecurityTestConfig::default();
     
     // Test malicious input patterns
-    let malicious_inputs = vec![
+    let malicious_inputs = vec![;
         "<script>alert('xss')</script>",
         "javascript:alert('xss')",
         "eval('malicious code')",
@@ -119,7 +119,7 @@ async fn test_input_sanitization() {
     ];
     
     for (i, malicious_input) in malicious_inputs.iter().enumerate() {
-        let malicious_request = json!({
+        let malicious_request = json!({;
             "model": "test-model",
             "messages": [
                 {
@@ -129,7 +129,7 @@ async fn test_input_sanitization() {
             ]
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -166,7 +166,7 @@ async fn test_rate_limiting() {
     for i in 0..(config.rate_limit_requests_per_minute + 10) {
         let request_data = create_test_request();
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -189,7 +189,7 @@ async fn test_rate_limiting() {
         
         // Add small delay to prevent overwhelming
         if i % 10 == 0 {
-            tokio::time::sleep(Duration::from_millis(10)).await;
+            tokio::time::sleep(Duration::from_millis(10))
         }
     }
     
@@ -213,7 +213,7 @@ async fn test_request_size_limits() {
     
     // Test with oversized request
     let large_content = "x".repeat(config.max_request_size + 1);
-    let oversized_request = json!({
+    let oversized_request = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -223,7 +223,7 @@ async fn test_request_size_limits() {
         ]
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -253,7 +253,7 @@ async fn test_cors_security() {
     headers.insert("origin", HeaderValue::from_static("https://example.com"));
     headers.insert("access-control-request-method", HeaderValue::from_static("POST"));
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::OPTIONS)
         .uri("/v1/chat/completions")
         .headers(headers)
@@ -277,7 +277,7 @@ async fn test_cors_security() {
     disallowed_headers.insert("origin", HeaderValue::from_static("https://malicious.com"));
     disallowed_headers.insert("access-control-request-method", HeaderValue::from_static("POST"));
     
-    let disallowed_request = Request::builder()
+    let disallowed_request = Request::builder();
         .method(Method::OPTIONS)
         .uri("/v1/chat/completions")
         .headers(disallowed_headers)
@@ -305,7 +305,7 @@ async fn test_authentication_security() {
     // Test without authentication
     let request_data = create_test_request();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -322,7 +322,7 @@ async fn test_authentication_security() {
     invalid_auth_headers.insert("content-type", HeaderValue::from_static("application/json"));
     invalid_auth_headers.insert("authorization", HeaderValue::from_static("Bearer invalid-token"));
     
-    let invalid_auth_request = Request::builder()
+    let invalid_auth_request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .headers(invalid_auth_headers)
@@ -340,7 +340,7 @@ async fn test_authentication_security() {
     malformed_auth_headers.insert("content-type", HeaderValue::from_static("application/json"));
     malformed_auth_headers.insert("authorization", HeaderValue::from_static("InvalidFormat"));
     
-    let malformed_auth_request = Request::builder()
+    let malformed_auth_request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .headers(malformed_auth_headers)
@@ -364,7 +364,7 @@ async fn test_sql_injection_prevention() {
     let app = create_router(app_state);
     
     // Test SQL injection attempts
-    let sql_injection_inputs = vec![
+    let sql_injection_inputs = vec![;
         "'; DROP TABLE users; --",
         "' OR '1'='1",
         "'; INSERT INTO users VALUES ('hacker', 'password'); --",
@@ -373,7 +373,7 @@ async fn test_sql_injection_prevention() {
     ];
     
     for (i, sql_input) in sql_injection_inputs.iter().enumerate() {
-        let sql_request = json!({
+        let sql_request = json!({;
             "model": "test-model",
             "messages": [
                 {
@@ -383,7 +383,7 @@ async fn test_sql_injection_prevention() {
             ]
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -413,7 +413,7 @@ async fn test_xss_prevention() {
     let app = create_router(app_state);
     
     // Test XSS attempts
-    let xss_inputs = vec![
+    let xss_inputs = vec![;
         "<script>alert('XSS')</script>",
         "javascript:alert('XSS')",
         "<img src=x onerror=alert('XSS')>",
@@ -425,7 +425,7 @@ async fn test_xss_prevention() {
     ];
     
     for (i, xss_input) in xss_inputs.iter().enumerate() {
-        let xss_request = json!({
+        let xss_request = json!({;
             "model": "test-model",
             "messages": [
                 {
@@ -435,7 +435,7 @@ async fn test_xss_prevention() {
             ]
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -465,7 +465,7 @@ async fn test_privacy_protection() {
     let app = create_router(app_state);
     
     // Test with sensitive information
-    let sensitive_inputs = vec![
+    let sensitive_inputs = vec![;
         "My credit card number is 4532-1234-5678-9012",
         "My SSN is 123-45-6789",
         "My password is secretpassword123",
@@ -474,7 +474,7 @@ async fn test_privacy_protection() {
     ];
     
     for (i, sensitive_input) in sensitive_inputs.iter().enumerate() {
-        let privacy_request = json!({
+        let privacy_request = json!({;
             "model": "test-model",
             "messages": [
                 {
@@ -484,7 +484,7 @@ async fn test_privacy_protection() {
             ]
         });
         
-        let request = Request::builder()
+        let request = Request::builder();
             .method(Method::POST)
             .uri("/v1/chat/completions")
             .header("content-type", "application/json")
@@ -526,7 +526,7 @@ async fn test_security_headers() {
     
     let request_data = create_test_request();
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -539,7 +539,7 @@ async fn test_security_headers() {
     let response_headers = response.headers();
     
     // Should include security headers
-    let security_headers = vec![
+    let security_headers = vec![;
         "x-content-type-options",
         "x-frame-options",
         "x-xss-protection",
@@ -568,7 +568,7 @@ async fn test_request_validation() {
     let app = create_router(app_state);
     
     // Test with invalid JSON
-    let invalid_json_request = Request::builder()
+    let invalid_json_request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -579,12 +579,12 @@ async fn test_request_validation() {
     assert_eq!(invalid_json_response.status(), StatusCode::BAD_REQUEST);
     
     // Test with missing required fields
-    let missing_fields_request = json!({
+    let missing_fields_request = json!({;
         "model": "test-model"
         // Missing messages field
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -595,12 +595,12 @@ async fn test_request_validation() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test with invalid field types
-    let invalid_types_request = json!({
+    let invalid_types_request = json!({;
         "model": "test-model",
         "messages": "invalid type" // Should be array
     });
     
-    let request = Request::builder()
+    let request = Request::builder();
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -621,16 +621,16 @@ async fn test_security_privacy_integration_suite() {
     println!("🚀 Starting comprehensive security & privacy test suite");
     
     // Test all security scenarios
-    test_input_sanitization().await;
-    test_rate_limiting().await;
-    test_request_size_limits().await;
-    test_cors_security().await;
-    test_authentication_security().await;
-    test_sql_injection_prevention().await;
-    test_xss_prevention().await;
-    test_privacy_protection().await;
-    test_security_headers().await;
-    test_request_validation().await;
+    test_input_sanitization()
+    test_rate_limiting()
+    test_request_size_limits()
+    test_cors_security()
+    test_authentication_security()
+    test_sql_injection_prevention()
+    test_xss_prevention()
+    test_privacy_protection()
+    test_security_headers()
+    test_request_validation()
     
     println!("✅ Comprehensive security & privacy test suite completed");
 }

@@ -212,7 +212,7 @@ async fn test_memory_management_streaming() {
     let results = timeout(
         Duration::from_secs(30),
         futures::future::join_all(handles)
-    ).await;
+    )
     
     match results {
         Ok(completed_handles) => {
@@ -341,7 +341,7 @@ async fn test_performance_under_load() {
         let results = timeout(
             Duration::from_secs(30),
             futures::future::join_all(handles)
-        ).await;
+        )
         
         let duration = start_time.elapsed();
         
@@ -539,7 +539,7 @@ async fn test_backpressure_handling() {
         if line.starts_with("data: ") {
             processed_chunks += 1;
             // Simulate slow processing
-            tokio::time::sleep(Duration::from_millis(10)).await;
+            tokio::time::sleep(Duration::from_millis(10))
         }
     }
     
@@ -605,7 +605,7 @@ async fn test_mixed_request_types() {
     let results = timeout(
         Duration::from_secs(30),
         futures::future::join_all(handles)
-    ).await;
+    )
     
     match results {
         Ok(completed_handles) => {

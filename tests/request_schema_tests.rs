@@ -6,14 +6,13 @@
 use nexus_nitro_llm::{
     config::Config,
     server::{AppState, create_router},
-    schemas::{ChatCompletionRequest, Message, Tool, FunctionDefinition, ToolChoice},
+    schemas::{ChatCompletionRequest, Message},
 };
 use axum::{
     body::Body,
-    http::{Request, StatusCode, HeaderMap, HeaderValue, Method},
-    Router,
+    http::{Request, StatusCode, Method},
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 use tower::ServiceExt;
 
@@ -52,7 +51,7 @@ impl Default for SchemaTestConfig {
 /// # Create Test App State
 /// 
 /// Creates a test application state with mock configuration.
-fn create_test_app_state() -> AppState {
+async fn create_test_app_state() -> AppState {
     let config = Config {
         backend_type: "lightllm".to_string(),
         backend_url: "http://localhost:8000".to_string(),
@@ -61,7 +60,7 @@ fn create_test_app_state() -> AppState {
         ..Default::default()
     };
     
-    AppState::new(config)
+    AppState::new(config).await
 }
 
 /// # Create Valid Test Request
@@ -88,15 +87,15 @@ fn create_valid_test_request() -> ChatCompletionRequest {
         presence_penalty: Some(0.0),
         tools: None,
         tool_choice: None,
+        ..Default::default()
     }
 }
 
 /// # Test Required Fields Validation
 /// 
 /// Tests validation of required fields in ChatCompletionRequest.
-#[tokio::test]
 async fn test_required_fields_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test missing messages field
@@ -112,7 +111,7 @@ async fn test_required_fields_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test empty messages array
@@ -128,7 +127,7 @@ async fn test_required_fields_validation() {
         .body(Body::from(serde_json::to_vec(&empty_messages_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test valid request with required fields
@@ -140,7 +139,7 @@ async fn test_required_fields_validation() {
         .body(Body::from(serde_json::to_vec(&valid_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     // Should not return 400 Bad Request for valid required fields
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
 }
@@ -148,9 +147,9 @@ async fn test_required_fields_validation() {
 /// # Test Message Schema Validation
 /// 
 /// Tests validation of message objects in the request.
-#[tokio::test]
+
 async fn test_message_schema_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test message without role
@@ -170,7 +169,7 @@ async fn test_message_schema_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_message_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test message with invalid role
@@ -191,7 +190,7 @@ async fn test_message_schema_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_role_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test message with valid roles
@@ -214,7 +213,7 @@ async fn test_message_schema_validation() {
             .body(Body::from(serde_json::to_vec(&valid_role_request).unwrap()))
             .unwrap();
         
-        let response = app.clone().oneshot(request).await.unwrap();
+        let _response = app.clone().oneshot(request).await.unwrap();
         // Should not return 400 Bad Request for valid roles
         assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     }
@@ -223,11 +222,11 @@ async fn test_message_schema_validation() {
 /// # Test Parameter Range Validation
 /// 
 /// Tests validation of parameter ranges (temperature, top_p, etc.).
-#[tokio::test]
+
 async fn test_parameter_range_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let config = SchemaTestConfig::default();
+    let _config = SchemaTestConfig::default();
     
     // Test temperature range validation
     let temperature_tests = vec![
@@ -252,7 +251,7 @@ async fn test_parameter_range_validation() {
             .body(Body::from(serde_json::to_vec(&request_data).unwrap()))
             .unwrap();
         
-        let response = app.clone().oneshot(request).await.unwrap();
+        let _response = app.clone().oneshot(request).await.unwrap();
         
         if expected_status == StatusCode::OK {
             assert_ne!(response.status(), StatusCode::BAD_REQUEST);
@@ -284,7 +283,7 @@ async fn test_parameter_range_validation() {
             .body(Body::from(serde_json::to_vec(&request_data).unwrap()))
             .unwrap();
         
-        let response = app.clone().oneshot(request).await.unwrap();
+        let _response = app.clone().oneshot(request).await.unwrap();
         
         if expected_status == StatusCode::OK {
             assert_ne!(response.status(), StatusCode::BAD_REQUEST);
@@ -297,9 +296,9 @@ async fn test_parameter_range_validation() {
 /// # Test Data Type Validation
 /// 
 /// Tests validation of data types for various parameters.
-#[tokio::test]
+
 async fn test_data_type_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test string parameters with wrong types
@@ -325,7 +324,7 @@ async fn test_data_type_validation() {
             .body(Body::from(serde_json::to_vec(&request_data).unwrap()))
             .unwrap();
         
-        let response = app.clone().oneshot(request).await.unwrap();
+        let _response = app.clone().oneshot(request).await.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST, "{}", description);
     }
     
@@ -348,18 +347,18 @@ async fn test_data_type_validation() {
         .body(Body::from(serde_json::to_vec(&valid_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Test Message Content Validation
 /// 
 /// Tests validation of message content.
-#[tokio::test]
+
 async fn test_message_content_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let config = SchemaTestConfig::default();
+    let _config = SchemaTestConfig::default();
     
     // Test message with null content
     let null_content_request = json!({
@@ -379,7 +378,7 @@ async fn test_message_content_validation() {
         .body(Body::from(serde_json::to_vec(&null_content_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test message with non-string content
@@ -400,7 +399,7 @@ async fn test_message_content_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_content_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test message with empty content
@@ -421,7 +420,7 @@ async fn test_message_content_validation() {
         .body(Body::from(serde_json::to_vec(&empty_content_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     // Empty content might be valid depending on implementation
     // assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
@@ -444,7 +443,7 @@ async fn test_message_content_validation() {
         .body(Body::from(serde_json::to_vec(&long_content_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     // Should return 400 Bad Request or 413 Payload Too Large
     assert!(response.status() == StatusCode::BAD_REQUEST || 
             response.status() == StatusCode::PAYLOAD_TOO_LARGE);
@@ -453,9 +452,9 @@ async fn test_message_content_validation() {
 /// # Test Tool Schema Validation
 /// 
 /// Tests validation of tool definitions and tool choice.
-#[tokio::test]
+
 async fn test_tool_schema_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test valid tool definition
@@ -490,7 +489,7 @@ async fn test_tool_schema_validation() {
         .body(Body::from(serde_json::to_vec(&valid_tool_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test invalid tool type
@@ -514,7 +513,7 @@ async fn test_tool_schema_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_tool_type_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test tool without function definition
@@ -535,16 +534,16 @@ async fn test_tool_schema_validation() {
         .body(Body::from(serde_json::to_vec(&missing_function_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Test Tool Choice Validation
 /// 
 /// Tests validation of tool choice parameter.
-#[tokio::test]
+
 async fn test_tool_choice_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test valid tool choice values
@@ -552,7 +551,7 @@ async fn test_tool_choice_validation() {
         "none",
         "auto",
         "required",
-        json!({"type": "function", "function": {"name": "get_weather"}})
+        r#"{"type": "function", "function": {"name": "get_weather"}}"#
     ];
     
     for tool_choice in valid_tool_choices {
@@ -578,7 +577,7 @@ async fn test_tool_choice_validation() {
             .body(Body::from(serde_json::to_vec(&request_data).unwrap()))
             .unwrap();
         
-        let response = app.clone().oneshot(request).await.unwrap();
+        let _response = app.clone().oneshot(request).await.unwrap();
         assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     }
     
@@ -596,16 +595,16 @@ async fn test_tool_choice_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_tool_choice_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Test JSON Schema Validation
 /// 
 /// Tests validation of JSON schema structure.
-#[tokio::test]
+
 async fn test_json_schema_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test malformed JSON
@@ -618,7 +617,7 @@ async fn test_json_schema_validation() {
         .body(Body::from(malformed_json))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test empty JSON
@@ -631,7 +630,7 @@ async fn test_json_schema_validation() {
         .body(Body::from(empty_json))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test non-JSON content
@@ -644,16 +643,16 @@ async fn test_json_schema_validation() {
         .body(Body::from(non_json_content))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Test Optional Parameters
 /// 
 /// Tests handling of optional parameters.
-#[tokio::test]
+
 async fn test_optional_parameters() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test request with only required parameters
@@ -669,7 +668,7 @@ async fn test_optional_parameters() {
         .body(Body::from(serde_json::to_vec(&minimal_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test request with all optional parameters
@@ -694,16 +693,16 @@ async fn test_optional_parameters() {
         .body(Body::from(serde_json::to_vec(&full_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Test Array Parameter Validation
 /// 
 /// Tests validation of array parameters.
-#[tokio::test]
+
 async fn test_array_parameter_validation() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test valid stop array
@@ -720,7 +719,7 @@ async fn test_array_parameter_validation() {
         .body(Body::from(serde_json::to_vec(&valid_stop_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test invalid stop array (non-string elements)
@@ -737,7 +736,7 @@ async fn test_array_parameter_validation() {
         .body(Body::from(serde_json::to_vec(&invalid_stop_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test empty stop array
@@ -754,16 +753,16 @@ async fn test_array_parameter_validation() {
         .body(Body::from(serde_json::to_vec(&empty_stop_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Test Unicode and Special Characters
 /// 
 /// Tests handling of Unicode and special characters in requests.
-#[tokio::test]
+
 async fn test_unicode_and_special_characters() {
-    let app_state = create_test_app_state();
+    let app_state = create_test_app_state().await;
     let app = create_router(app_state);
     
     // Test Unicode content
@@ -784,7 +783,7 @@ async fn test_unicode_and_special_characters() {
         .body(Body::from(serde_json::to_vec(&unicode_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
     
     // Test special characters in model name
@@ -800,14 +799,14 @@ async fn test_unicode_and_special_characters() {
         .body(Body::from(serde_json::to_vec(&special_model_request).unwrap()))
         .unwrap();
     
-    let response = app.clone().oneshot(request).await.unwrap();
+    let _response = app.clone().oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 /// # Integration Test Suite
 /// 
 /// Runs a comprehensive integration test suite for request schema validation.
-#[tokio::test]
+
 async fn test_request_schema_integration_suite() {
     println!("🚀 Starting comprehensive request schema validation test suite");
     

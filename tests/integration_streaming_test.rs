@@ -21,7 +21,7 @@ use tracing::{info, warn};
 /// Tests streaming functionality with LightLLM backend.
 
 async fn test_lightllm_streaming() {
-    let adapter = LightLLMAdapter::new(
+    let adapter = LightLLMAdapter::new(;
         "http://localhost:8000".to_string(),
         "test-model".to_string(),
         None,
@@ -31,7 +31,7 @@ async fn test_lightllm_streaming() {
     
     // Test that LightLLM properly rejects streaming requests
     use nexus_nitro_llm::schemas::{ChatCompletionRequest, Message};
-    let streaming_request = ChatCompletionRequest {
+    let streaming_request = ChatCompletionRequest {;
         model: Some("test-model".to_string()),
         messages: vec![Message {
             role: "user".to_string(),
@@ -45,7 +45,7 @@ async fn test_lightllm_streaming() {
         ..Default::default()
     };
     
-    let result = adapter.chat_completions_http(streaming_request).await;
+    let result = adapter.chat_completions_http(streaming_request);
     
     match result {
         Err(ProxyError::BadRequest(msg)) if msg.contains("stream=true unsupported") => {
@@ -65,7 +65,7 @@ async fn test_lightllm_streaming() {
 /// Tests streaming functionality with OpenAI backend.
 
 async fn test_openai_streaming() {
-    let adapter = OpenAIAdapter::new(
+    let adapter = OpenAIAdapter::new(;
         "https://api.openai.com/v1".to_string(),
         "gpt-3.5-turbo".to_string(),
         Some("test-token".to_string()),
@@ -83,7 +83,7 @@ async fn test_openai_streaming() {
 /// Tests streaming functionality with vLLM backend.
 
 async fn test_vllm_streaming() {
-    let adapter = VLLMAdapter::new(
+    let adapter = VLLMAdapter::new(;
         "http://localhost:8001".to_string(),
         "test-model".to_string(),
         Some("test-token".to_string()),
@@ -101,7 +101,7 @@ async fn test_vllm_streaming() {
 /// Tests streaming functionality with Azure OpenAI backend.
 
 async fn test_azure_openai_streaming() {
-    let adapter = AzureOpenAIAdapter::new(
+    let adapter = AzureOpenAIAdapter::new(;
         "https://test.openai.azure.com".to_string(),
         "gpt-35-turbo".to_string(),
         Some("test-token".to_string()),
@@ -119,7 +119,7 @@ async fn test_azure_openai_streaming() {
 /// Tests streaming functionality with custom OpenAI-compatible endpoints.
 
 async fn test_custom_endpoint_streaming() {
-    let adapter = CustomAdapter::new(
+    let adapter = CustomAdapter::new(;
         "https://custom-endpoint.com".to_string(),
         "custom-model".to_string(),
         Some("test-token".to_string()),
@@ -187,7 +187,7 @@ async fn test_streaming_with_function_calling() {
     
     
     // Test that we can create function calling tools
-    let tool = Tool {
+    let tool = Tool {;
         tool_type: "function".to_string(),
         function: FunctionDefinition {
             name: "get_weather".to_string(),
@@ -251,19 +251,19 @@ async fn test_integration_suite() {
     info!("🚀 Starting comprehensive integration test suite");
     
     // Test all streaming adapters
-    test_lightllm_streaming().await;
-    test_openai_streaming().await;
-    test_vllm_streaming().await;
-    test_azure_openai_streaming().await;
-    test_custom_endpoint_streaming().await;
+    test_lightllm_streaming()
+    test_openai_streaming()
+    test_vllm_streaming()
+    test_azure_openai_streaming()
+    test_custom_endpoint_streaming()
     
     // Test enhanced features
-    test_enhanced_streaming_handler().await;
-    test_streaming_performance().await;
-    test_streaming_error_recovery().await;
-    test_streaming_with_function_calling().await;
-    test_streaming_metrics_collection().await;
-    test_graceful_shutdown_with_streaming().await;
+    test_enhanced_streaming_handler()
+    test_streaming_performance()
+    test_streaming_error_recovery()
+    test_streaming_with_function_calling()
+    test_streaming_metrics_collection()
+    test_graceful_shutdown_with_streaming()
     
     info!("✅ Comprehensive integration test suite completed");
 }

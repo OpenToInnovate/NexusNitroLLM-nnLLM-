@@ -24,7 +24,7 @@ async fn create_test_app(lightllm_url: String) -> Router {
     config.model_id = "test-model".to_string();
     config.backend_type = "lightllm".to_string(); // Explicitly set backend type
 
-    let state = AppState::new(config).await;
+    let state = AppState::new(config);
 
     Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -35,7 +35,7 @@ async fn create_test_app(lightllm_url: String) -> Router {
 #[ignore = "Mock server connection issues - needs investigation"]
 async fn test_chat_completions_success() {
     // Start a mock LightLLM server
-    let mock_server = MockServer::start().await;
+    let mock_server = MockServer::start();
 
     Mock::given(method("POST"))
         .and(path("/generate"))
@@ -46,13 +46,13 @@ async fn test_chat_completions_success() {
             })))
         .expect(1) // We expect exactly 1 request
         .mount(&mock_server)
-        .await;
+        
 
     let mock_uri = mock_server.uri();
     println!("Mock server URI: {}", mock_uri);
-    let app = create_test_app(mock_uri).await;
+    let app = create_test_app(mock_uri);
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -65,7 +65,7 @@ async fn test_chat_completions_success() {
         "top_p": 1.0
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -95,7 +95,7 @@ async fn test_chat_completions_success() {
 #[ignore = "Mock server connection issues - needs investigation"]
 async fn test_chat_completions_with_system_message() {
     // Use a fresh mock server for this test
-    let mock_server = MockServer::start().await;
+    let mock_server = MockServer::start();
 
     // Log all requests to debug what we're actually sending
     Mock::given(method("POST"))
@@ -106,11 +106,11 @@ async fn test_chat_completions_with_system_message() {
                 "text": "2 + 2 equals 4."
             })))
         .mount(&mock_server)
-        .await;
+        
 
-    let app = create_test_app(mock_server.uri()).await;
+    let app = create_test_app(mock_server.uri());
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -127,7 +127,7 @@ async fn test_chat_completions_with_system_message() {
         "top_p": 0.9
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -151,10 +151,10 @@ async fn test_chat_completions_with_system_message() {
 
 #[tokio::test]
 async fn test_chat_completions_stream_supported() {
-    let mock_server = MockServer::start().await;
-    let app = create_test_app(mock_server.uri()).await;
+    let mock_server = MockServer::start();
+    let app = create_test_app(mock_server.uri());
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -165,7 +165,7 @@ async fn test_chat_completions_stream_supported() {
         "stream": true
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -191,7 +191,7 @@ async fn test_chat_completions_stream_supported() {
 
 #[tokio::test]
 async fn test_chat_completions_upstream_error() {
-    let mock_server = MockServer::start().await;
+    let mock_server = MockServer::start();
 
     Mock::given(method("POST"))
         .and(path("/generate"))
@@ -199,11 +199,11 @@ async fn test_chat_completions_upstream_error() {
             "error": "Internal server error"
         })))
         .mount(&mock_server)
-        .await;
+        
 
-    let app = create_test_app(mock_server.uri()).await;
+    let app = create_test_app(mock_server.uri());
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "test-model",
         "messages": [
             {
@@ -213,7 +213,7 @@ async fn test_chat_completions_upstream_error() {
         ]
     });
 
-    let request = Request::builder()
+    let request = Request::builder();
         .method("POST")
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -250,8 +250,8 @@ async fn test_real_lightllm_endpoint() {
     config.model_id = "llama".to_string();
     config.backend_token = Some(token.to_string());
 
-    let state = AppState::new(config).await;
-    let app = Router::new()
+    let state = AppState::new(config);
+    let app = Router::new();
         .route("/v1/chat/completions", post(chat_completions))
         .with_state(state);
 
@@ -263,9 +263,9 @@ async fn test_real_lightllm_endpoint() {
     });
 
     // Give the server a moment to start
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(100))
 
-    let request_body = json!({
+    let request_body = json!({;
         "model": "llama",
         "messages": [
             {
@@ -277,7 +277,7 @@ async fn test_real_lightllm_endpoint() {
         "temperature": 0.7
     });
 
-    let response = client
+    let response = client;
         .post(format!("http://{}/v1/chat/completions", addr))
         .header("Authorization", format!("Bearer {}", token))
         .header("Content-Type", "application/json")
