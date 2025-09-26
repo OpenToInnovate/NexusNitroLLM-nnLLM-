@@ -225,7 +225,7 @@ async fn test_idempotency_keys() {
     let response1 = app.clone().oneshot(request1).await.unwrap();
     
     // Second request with same idempotency key
-    let request2 = Request::builder();
+    let request2 = Request::builder()
         .method(Method::POST)
         .uri("/v1/chat/completions")
         .header("content-type", "application/json")
@@ -253,7 +253,7 @@ async fn test_idempotency_keys() {
 async fn test_retry_with_different_adapters() {
     let config = RetryTestConfig::default();
     
-    let adapters = vec![;
+    let adapters = vec![
         ("lightllm", "http://localhost:8000"),
         ("vllm", "http://localhost:8001"),
         ("openai", "https://api.openai.com"),
@@ -265,7 +265,7 @@ async fn test_retry_with_different_adapters() {
         println!("Testing retry with {} adapter", adapter_type);
         
         // Test configuration for each adapter
-        let test_config = Config {;
+        let test_config = Config {
             backend_type: adapter_type.to_string(),
             backend_url: url.to_string(),
             model_id: "test-model".to_string(),
@@ -379,11 +379,11 @@ async fn test_timeout_handling() {
     // Test with short timeout
     let short_timeout = Duration::from_millis(100);
     
-    let result = timeout(short_timeout, async {;
+    let result = timeout(short_timeout, async {
         // Simulate long-running operation
-        sleep(Duration::from_secs(1))
+        sleep(Duration::from_secs(1)).await;
         "completed"
-    })
+    }).await;
     
     match result {
         Ok(_) => {
@@ -397,11 +397,11 @@ async fn test_timeout_handling() {
     // Test with longer timeout
     let long_timeout = Duration::from_secs(5);
     
-    let result = timeout(long_timeout, async {;
+    let result = timeout(long_timeout, async {
         // Simulate quick operation
-        sleep(Duration::from_millis(100))
+        sleep(Duration::from_millis(100)).await;
         "completed"
-    })
+    }).await;
     
     match result {
         Ok(value) => {
@@ -497,16 +497,16 @@ async fn test_retries_idempotency_integration_suite() {
     println!("🚀 Starting comprehensive retries, idempotency & backoff test suite");
     
     // Test all retry scenarios
-    test_retry_on_5xx_errors()
-    test_no_retry_on_4xx_errors()
-    test_exponential_backoff()
-    test_idempotency_keys()
-    test_retry_with_different_adapters()
-    test_circuit_breaker_pattern()
-    test_retry_headers()
-    test_timeout_handling()
-    test_retry_metrics()
-    test_concurrent_retries()
+    test_retry_on_5xx_errors().await;
+    test_no_retry_on_4xx_errors().await;
+    test_exponential_backoff().await;
+    test_idempotency_keys().await;
+    test_retry_with_different_adapters().await;
+    test_circuit_breaker_pattern().await;
+    test_retry_headers().await;
+    test_timeout_handling().await;
+    test_retry_metrics().await;
+    test_concurrent_retries().await;
     
     println!("✅ Comprehensive retries, idempotency & backoff test suite completed");
 }

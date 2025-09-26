@@ -147,8 +147,17 @@ impl Adapter {
             Self::Custom(adapter) => adapter.chat_completions_http(req).await,
             Self::Direct(adapter) => {
                 // Convert ChatCompletionResponse to Response for direct adapter
-                let _response = adapter.chat_completions(req).await?;
-                Err(ProxyError::Internal("Direct adapter response conversion not implemented".to_string()))
+                let chat_response = adapter.chat_completions(req).await?;
+
+                // Convert to HTTP response
+                let json_response = serde_json::to_string(&chat_response)
+                    .map_err(|e| ProxyError::Internal(format!("Failed to serialize response: {}", e)))?;
+
+                Ok(Response::builder()
+                    .status(200)
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(json_response))
+                    .map_err(|e| ProxyError::Internal(format!("Failed to build response: {}", e)))?)
             }
         }
     }
@@ -159,10 +168,10 @@ impl Adapter {
             Self::LightLLM(_) => true,      // LightLLM supports streaming
             Self::VLLM(_) => true,          // vLLM supports streaming
             Self::AzureOpenAI(_) => true,   // Azure OpenAI supports streaming
-            Self::AWSBedrock(_) => false,   // AWS Bedrock streaming not implemented
+            Self::AWSBedrock(_) => true,    // AWS Bedrock supports streaming
             Self::OpenAI(_) => true,        // OpenAI API supports streaming
             Self::Custom(_) => true,        // Assume custom endpoints support streaming
-            Self::Direct(_) => false,       // Direct mode doesn't support streaming
+            Self::Direct(_) => true,        // Direct mode supports streaming
         }
     }
 
@@ -297,6 +306,6 @@ mod tests {
 
         config.backend_url = "direct".to_string();
         let direct_adapter = Adapter::from_config(&config);
-        assert!(!direct_adapter.supports_streaming());
+        assert!(direct_adapter.supports_streaming());
     }
 }

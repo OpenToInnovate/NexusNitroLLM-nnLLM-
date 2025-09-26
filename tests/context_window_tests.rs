@@ -92,7 +92,7 @@ fn create_long_conversation(message_count: usize, message_length: usize) -> Vec<
 async fn test_single_message_length_limits() {
     let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let _config = ContextWindowTestConfig::default();
+    let config = ContextWindowTestConfig::default();
     
     // Test message within limits
     let normal_message = create_long_message(1000);
@@ -148,7 +148,7 @@ async fn test_single_message_length_limits() {
 async fn test_conversation_length_limits() {
     let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let _config = ContextWindowTestConfig::default();
+    let config = ContextWindowTestConfig::default();
     
     // Test conversation within limits
     let normal_messages = create_long_conversation(10, 100);
@@ -194,7 +194,7 @@ async fn test_conversation_length_limits() {
 async fn test_context_window_truncation() {
     let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let _config = ContextWindowTestConfig::default();
+    let config = ContextWindowTestConfig::default();
     
     // Create a conversation that would exceed context window
     let message_length = (config.max_context_window as f64 * config.token_char_ratio) as usize / 10;
@@ -235,7 +235,7 @@ async fn test_context_window_truncation() {
 /// 
 /// Tests token counting accuracy for different content types.
 async fn test_token_counting() {
-    let _config = ContextWindowTestConfig::default();
+    let config = ContextWindowTestConfig::default();
     
     // Test different content types
     let long_text = create_long_message(1000);
@@ -330,7 +330,7 @@ async fn test_message_priority_truncation() {
 async fn test_streaming_with_context_limits() {
     let app_state = create_test_app_state().await;
     let app = create_router(app_state);
-    let _config = ContextWindowTestConfig::default();
+    let config = ContextWindowTestConfig::default();
     
     // Create a long conversation for streaming
     let long_messages = create_long_conversation(50, 200);

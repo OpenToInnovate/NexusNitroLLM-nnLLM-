@@ -189,7 +189,7 @@ async fn test_missing_stream_parameter() {
 /// Tests that adapters correctly report their streaming support capabilities.
 #[tokio::test]
 async fn test_adapter_streaming_support() {
-    let mock_server = MockServer::start();
+    let mock_server = MockServer::start().await;
     let mut config = Config::for_test();
     config.port = 8080;
     config.backend_url = mock_server.uri();
@@ -209,7 +209,7 @@ async fn test_sse_event_format() {
     use nexus_nitro_llm::schemas::{ChatCompletionChunk, StreamChoice, StreamDelta};
     
     // Create a sample chunk
-    let chunk = ChatCompletionChunk {;
+    let chunk = ChatCompletionChunk {
         id: "chatcmpl-test".to_string(),
         object: "chat.completion.chunk".to_string(),
         created: 1234567890,
@@ -248,7 +248,7 @@ async fn test_sse_event_format() {
 async fn test_streaming_error_handling() {
     use nexus_nitro_llm::schemas::{StreamingError, ErrorDetails};
     
-    let error = StreamingError {;
+    let error = StreamingError {
         error: ErrorDetails {
             message: "Test error".to_string(),
             r#type: "test_error".to_string(),

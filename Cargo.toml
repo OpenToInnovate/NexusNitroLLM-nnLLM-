@@ -99,6 +99,7 @@ adapter-lightllm = []
 adapter-openai = []
 adapter-vllm = []
 adapter-azure = []
+adapter-aws = ["chrono", "sha2", "hmac"]  # AWS Bedrock with authentication
 adapter-custom = []
 
 # Language bindings
@@ -124,6 +125,7 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls", "gzip", "brotli"
 tracing = "0.1"
 bytes = "1.0"
 futures-util = "0.3"
+futures = "0.3"  # For executor block_on in distributed rate limiting
 tokio-stream = "0.1"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 url = "2.4"   # For URL validation
@@ -144,6 +146,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = tr
 chrono = { version = "0.4", features = ["serde"], optional = true }
 dashmap = { version = "5.5", optional = true }  # Concurrent HashMap for high-performance caching
 sha2 = { version = "0.10", optional = true }  # For cache key generation
+hmac = { version = "0.12", optional = true }  # For AWS Signature V4 authentication
 fastrand = "2.0"  # For random number generation in load balancing
 
 # Python bindings (optional)

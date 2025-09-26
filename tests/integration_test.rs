@@ -251,7 +251,7 @@ async fn test_real_lightllm_endpoint() {
     config.backend_token = Some(token.to_string());
 
     let state = AppState::new(config);
-    let app = Router::new();
+    let app = Router::new()
         .route("/v1/chat/completions", post(chat_completions))
         .with_state(state);
 

@@ -1,7 +1,7 @@
 //! # Authentication and Headers Tests
-//! 
+//!
 //! This module provides comprehensive tests for authentication and header handling
-//! across all 4 language bindings: Rust/loopback, React, Node.js, and Python.
+//! across all 3 language bindings: Rust/loopback, Node.js, and Python.
 //! Tests cover all API endpoints: /v1/chat/completions, /health, /v1/ui, and /login.
 
 use nexus_nitro_llm::{
@@ -584,32 +584,6 @@ async fn test_python_binding_auth() {
     println!("📝 Python auth tests would be implemented here");
 }
 
-/// # Test React Frontend Authentication
-/// 
-/// Tests authentication for React frontend integration.
-
-async fn test_react_frontend_auth() {
-    // This test would verify React frontend authentication patterns
-    // For now, we'll document the expected behavior
-    
-    let expected_patterns = vec![;
-        "React app should handle API key storage securely",
-        "React app should include Authorization header in requests",
-        "React app should handle 401/403 responses gracefully",
-        "React app should support token refresh mechanisms",
-        "React app should validate API keys before sending requests",
-    ];
-    
-    for pattern in expected_patterns {
-        println!("📝 React auth pattern: {}", pattern);
-    }
-    
-    // In a real implementation, we would:
-    // 1. Start a test React app
-    // 2. Test authentication flows
-    // 3. Verify header handling
-    // 4. Test error scenarios
-}
 
 /// # Test Cross-Language Header Consistency
 /// 
@@ -680,13 +654,13 @@ async fn test_language_specific_error_messages() {
 }
 
 /// # Integration Test Suite
-/// 
+///
 /// Runs a comprehensive integration test suite for authentication and headers
-/// across all 4 language bindings: Rust/loopback, React, Node.js, and Python.
+/// across all 3 language bindings: Rust/loopback, Node.js, and Python.
 #[tokio::test]
 async fn test_auth_headers_integration_suite() {
     println!("🚀 Starting comprehensive authentication and headers test suite");
-    println!("Testing all 4 language bindings: Rust/loopback, React, Node.js, Python");
+    println!("Testing all 3 language bindings: Rust/loopback, Node.js, Python");
     
     // Test Rust/loopback authentication scenarios
     println!("🔧 Testing Rust/loopback bindings...");
@@ -714,10 +688,7 @@ async fn test_auth_headers_integration_suite() {
     
     println!("🐍 Testing Python bindings...");
     test_python_binding_auth()
-    
-    println!("⚛️  Testing React frontend...");
-    test_react_frontend_auth()
-    
+
     println!("✅ Comprehensive authentication and headers test suite completed");
-    println!("All 4 language bindings tested for auth & header handling");
+    println!("All 3 language bindings tested for auth & header handling");
 }

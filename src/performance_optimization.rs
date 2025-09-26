@@ -16,7 +16,7 @@
 use crate::{
     adapters::Adapter,
     error::ProxyError,
-    schemas::ChatCompletionRequest,
+    schemas::{ChatCompletionRequest, ChatCompletionResponse},
 };
 use axum::{
     response::Response,
@@ -31,7 +31,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tokio::{
-    sync::{RwLock, Semaphore},
+    sync::{RwLock, Semaphore, oneshot},
     time::{interval, timeout},
 };
 use tracing::{debug, info, warn, error};
@@ -230,8 +230,11 @@ impl BackendInstance {
     }
 }
 
+/// Type alias for convenience
+pub type LoadBalancer = AdvancedLoadBalancer;
+
 /// # Advanced Load Balancer
-/// 
+///
 /// Provides intelligent load balancing with multiple strategies and health monitoring.
 pub struct AdvancedLoadBalancer {
     /// Backend instances
@@ -317,8 +320,8 @@ impl AdvancedLoadBalancer {
         let available_backends: Vec<_> = backends
             .iter()
             .filter(|backend| {
-                // Check if backend is available (this is a sync check, so we use a simple heuristic)
-                true // In a real implementation, we'd check the health status
+                // Check if backend is healthy and available
+                backend.health_status == BackendHealth::Healthy
             })
             .collect();
         
@@ -592,6 +595,77 @@ impl AdvancedLoadBalancer {
             Err(_) => false, // Timeout
         }
     }
+
+    /// # Process request through load balancer
+    ///
+    /// Processes a request using the load balancer's adapter selection logic.
+    pub async fn process_request(&self, request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
+        let backends = self.backends.read().await;
+
+        if backends.is_empty() {
+            return Err(ProxyError::Internal("No backends available".to_string()));
+        }
+
+        // Select backend based on strategy
+        let backend_index = match self.config.strategy {
+            LoadBalancingStrategy::RoundRobin => {
+                self.round_robin_index.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % backends.len()
+            }
+            LoadBalancingStrategy::WeightedRoundRobin => {
+                // Simplified weighted selection - pick backend with highest weight that's healthy
+                backends.iter()
+                    .enumerate()
+                    .filter(|(_, backend)| backend.health_status == BackendHealth::Healthy)
+                    .max_by_key(|(_, backend)| backend.weight)
+                    .map(|(index, _)| index)
+                    .unwrap_or(0)
+            }
+            LoadBalancingStrategy::LeastConnections => {
+                // Pick backend with least active connections
+                backends.iter()
+                    .enumerate()
+                    .filter(|(_, backend)| backend.health_status == BackendHealth::Healthy)
+                    .min_by_key(|(_, backend)| backend.active_connections)
+                    .map(|(index, _)| index)
+                    .unwrap_or(0)
+            }
+            LoadBalancingStrategy::HealthBased => {
+                // Pick healthiest backend
+                backends.iter()
+                    .enumerate()
+                    .filter(|(_, backend)| backend.health_status == BackendHealth::Healthy)
+                    .min_by_key(|(_, backend)| backend.failure_rate as i32)
+                    .map(|(index, _)| index)
+                    .unwrap_or(0)
+            }
+        };
+
+        let backend = &backends[backend_index];
+
+        // Update metrics
+        self.monitor.total_requests.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        let start_time = Instant::now();
+        let result = backend.adapter.chat_completions(request).await;
+        let response_time = start_time.elapsed();
+
+        match result {
+            Ok(response) => {
+                self.monitor.total_successful.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+                // Update average response time
+                let current_avg = self.monitor.avg_response_time.load(std::sync::atomic::Ordering::Relaxed);
+                let new_avg = (current_avg + response_time.as_millis() as u64) / 2;
+                self.monitor.avg_response_time.store(new_avg, std::sync::atomic::Ordering::Relaxed);
+
+                Ok(response)
+            }
+            Err(error) => {
+                self.monitor.total_failed.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                Err(error)
+            }
+        }
+    }
 }
 
 /// # Load Balancer Metrics
@@ -615,70 +689,132 @@ pub struct LoadBalancerMetrics {
     pub backend_metrics: HashMap<String, BackendMetrics>,
 }
 
+/// Batch request with response channel
+struct BatchRequest {
+    request: ChatCompletionRequest,
+    response_tx: oneshot::Sender<Result<ChatCompletionResponse, ProxyError>>,
+}
+
 /// # Request Batching
-/// 
-/// Batches multiple requests for improved throughput.
+///
+/// Batches multiple requests for improved throughput with proper async handling.
 pub struct RequestBatcher {
     /// Batch size
     batch_size: usize,
     /// Batch timeout
     batch_timeout: Duration,
-    /// Pending requests
-    pending_requests: Arc<RwLock<Vec<ChatCompletionRequest>>>,
+    /// Pending batch requests
+    pending_requests: Arc<RwLock<Vec<BatchRequest>>>,
+    /// Load balancer for processing batches
+    load_balancer: Arc<LoadBalancer>,
 }
 
 impl RequestBatcher {
     /// # Create new request batcher
-    /// 
+    ///
     /// Creates a new request batcher with the specified configuration.
-    pub fn new(batch_size: usize, batch_timeout: Duration) -> Self {
+    pub fn new(batch_size: usize, batch_timeout: Duration, load_balancer: Arc<LoadBalancer>) -> Self {
         Self {
             batch_size,
             batch_timeout,
             pending_requests: Arc::new(RwLock::new(Vec::new())),
+            load_balancer,
         }
     }
-    
+
     /// # Add request to batch
-    /// 
-    /// Adds a request to the current batch.
-    pub async fn add_request(&self, request: ChatCompletionRequest) -> Result<Response, ProxyError> {
-        let mut pending = self.pending_requests.write().await;
-        pending.push(request);
-        
-        if pending.len() >= self.batch_size {
-            // Process batch immediately
-            let batch = pending.drain(..).collect();
-            drop(pending);
-            self.process_batch(batch).await
+    ///
+    /// Adds a request to the current batch and returns when response is ready.
+    pub async fn add_request(&self, request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
+        let (response_tx, response_rx) = oneshot::channel();
+        let batch_request = BatchRequest {
+            request,
+            response_tx,
+        };
+
+        let should_process_immediately = {
+            let mut pending = self.pending_requests.write().await;
+            pending.push(batch_request);
+            pending.len() >= self.batch_size
+        };
+
+        if should_process_immediately {
+            // Trigger batch processing
+            tokio::spawn({
+                let pending_requests = self.pending_requests.clone();
+                let load_balancer = self.load_balancer.clone();
+                async move {
+                    let batch = {
+                        let mut pending = pending_requests.write().await;
+                        pending.drain(..).collect()
+                    };
+                    Self::process_batch_static(batch, load_balancer).await;
+                }
+            });
         } else {
-            // Wait for batch timeout or more requests
-            drop(pending);
-            self.wait_for_batch().await
+            // Start timeout for this batch
+            tokio::spawn({
+                let pending_requests = self.pending_requests.clone();
+                let load_balancer = self.load_balancer.clone();
+                let batch_timeout = self.batch_timeout;
+                async move {
+                    tokio::time::sleep(batch_timeout).await;
+                    let batch = {
+                        let mut pending = pending_requests.write().await;
+                        if !pending.is_empty() {
+                            pending.drain(..).collect()
+                        } else {
+                            Vec::new()
+                        }
+                    };
+                    if !batch.is_empty() {
+                        Self::process_batch_static(batch, load_balancer).await;
+                    }
+                }
+            });
         }
+
+        // Wait for response
+        response_rx.await
+            .map_err(|_| ProxyError::Internal("Batch request was cancelled".to_string()))?
     }
-    
-    /// # Wait for batch completion
-    /// 
-    /// Waits for the batch to be completed.
-    async fn wait_for_batch(&self) -> Result<Response, ProxyError> {
-        // In a real implementation, this would use channels or futures
-        // For now, we'll return an error
-        Err(ProxyError::Internal("Batch processing not fully implemented".to_string()))
-    }
-    
-    /// # Process batch
-    /// 
-    /// Processes a batch of requests.
-    async fn process_batch(&self, batch: Vec<ChatCompletionRequest>) -> Result<Response, ProxyError> {
-        // In a real implementation, this would process all requests in parallel
-        // For now, we'll just process the first request
-        if let Some(first_request) = batch.first() {
-            // This would use the load balancer to process the request
-            Err(ProxyError::Internal("Batch processing not fully implemented".to_string()))
-        } else {
-            Err(ProxyError::BadRequest("Empty batch".to_string()))
+
+    /// # Process batch (static method)
+    ///
+    /// Processes a batch of requests in parallel.
+    async fn process_batch_static(batch: Vec<BatchRequest>, load_balancer: Arc<LoadBalancer>) {
+        if batch.is_empty() {
+            return;
         }
+
+        debug!("Processing batch of {} requests", batch.len());
+
+        // Process all requests in parallel
+        let futures: Vec<_> = batch.into_iter().map(|batch_req| {
+            let load_balancer = load_balancer.clone();
+            async move {
+                let result = load_balancer.process_request(batch_req.request).await;
+                let _ = batch_req.response_tx.send(result);
+            }
+        }).collect();
+
+        // Wait for all requests to complete
+        join_all(futures).await;
+
+        debug!("Batch processing completed");
+    }
+
+    /// # Get batch statistics
+    ///
+    /// Returns current batching statistics.
+    pub async fn get_stats(&self) -> serde_json::Value {
+        let pending = self.pending_requests.read().await;
+        serde_json::json!({
+            "batch_size": self.batch_size,
+            "batch_timeout_ms": self.batch_timeout.as_millis(),
+            "pending_requests": pending.len(),
+            "enabled": true
+        })
     }
 }
 

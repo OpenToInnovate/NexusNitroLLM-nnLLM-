@@ -67,7 +67,7 @@ pub struct Message {
     pub tool_call_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatCompletionResponse {
     pub id: String,
     pub object: String,
@@ -77,7 +77,7 @@ pub struct ChatCompletionResponse {
     pub usage: Option<Usage>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Choice {
     pub index: u32,
     pub message: Message,

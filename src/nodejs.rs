@@ -393,12 +393,7 @@ impl Task for NodeChatCompletionTask {
                     Adapter::AzureOpenAI(adapter) => adapter.chat_completions(rust_request).await,
                     Adapter::AWSBedrock(adapter) => adapter.chat_completions(rust_request).await,
                     Adapter::Custom(adapter) => adapter.chat_completions(rust_request).await,
-                    Adapter::Direct(_) => {
-                        // Direct mode not implemented yet
-                        return Err(crate::error::ProxyError::BadRequest(
-                            "Direct mode not yet implemented in Node.js bindings".to_string()
-                        ));
-                    }
+                    Adapter::Direct(adapter) => adapter.chat_completions(rust_request).await,
                 }
             }).map_err(|e| Error::new(
                 Status::GenericFailure,
@@ -531,12 +526,7 @@ impl Task for NodeConnectionTestTask {
                 Adapter::AzureOpenAI(adapter) => adapter.chat_completions(test_request).await,
                 Adapter::AWSBedrock(adapter) => adapter.chat_completions(test_request).await,
                 Adapter::Custom(adapter) => adapter.chat_completions(test_request).await,
-                Adapter::Direct(_) => {
-                    // Direct mode not implemented yet
-                    return Err(crate::error::ProxyError::BadRequest(
-                        "Direct mode not yet implemented in Node.js bindings".to_string()
-                    ));
-                }
+                Adapter::Direct(adapter) => adapter.chat_completions(test_request).await,
             }
         });
 

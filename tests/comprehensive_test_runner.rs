@@ -48,7 +48,6 @@ impl Default for TestSuiteConfig {
             ],
             language_bindings: vec![
                 "rust_loopback".to_string(),
-                "react".to_string(),
                 "nodejs".to_string(),
                 "python".to_string(),
             ],
@@ -199,17 +198,6 @@ impl TestSuiteRunner {
             "rust_loopback" => {
                 // Run Rust/loopback auth & headers tests
                 println!("    ✅ Rust/loopback auth & headers tests completed");
-                TestResult {
-                    category: "auth_headers".to_string(),
-                    language_binding: language_binding.to_string(),
-                    success: true,
-                    duration: start_time.elapsed(),
-                    error_message: None,
-                }
-            }
-            "react" => {
-                // Run React auth & headers tests
-                println!("    ✅ React auth & headers tests completed");
                 TestResult {
                     category: "auth_headers".to_string(),
                     language_binding: language_binding.to_string(),
@@ -641,7 +629,7 @@ async fn test_comprehensive_integration_suite() {
         "caching", "pagination_jobs", "i18n_encoding"
     ];
     
-    let expected_bindings = vec!["rust_loopback", "react", "nodejs", "python"];
+    let expected_bindings = vec!["rust_loopback", "nodejs", "python"];
     
     // Verify all categories were tested
     for category in &expected_categories {

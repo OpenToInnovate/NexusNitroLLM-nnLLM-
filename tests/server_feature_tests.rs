@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn test_config_server_specific_validation() {
         // Create a valid config to start with
-        let mut config = Config {;
+        let mut config = Config {
             port: 8080,
             host: "0.0.0.0".to_string(),
             backend_url: "http://localhost:8000".to_string(),
