@@ -184,7 +184,7 @@ required-features = []
 
 [dev-dependencies]
 tokio-test = "0.4"
-wiremock = "0.6"
+wiremock = "0.5"
 futures = "0.3"
 futures-util = "0.3"
 hdrhistogram = "7"

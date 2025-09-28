@@ -184,12 +184,7 @@ impl LightLLMAdapter {
     /// Process chat completion requests with advanced optimizations
     #[cfg(feature = "server")]
     pub async fn chat_completions_http(&self, req: ChatCompletionRequest) -> Result<Response, ProxyError> {
-        // Check if streaming is requested (not supported by LightLLM)
-        if req.stream.unwrap_or(false) {
-            return Err(ProxyError::BadRequest(
-                "stream=true unsupported for lightllm_generate backend".into(),
-            ));
-        }
+        // Note: This adapter now supports OpenAI-compatible endpoints that may support streaming
 
         let request_hash = Self::calculate_request_hash(&req);
         debug!("Processing LightLLM request with hash: {:x}", request_hash);
@@ -198,22 +193,47 @@ impl LightLLMAdapter {
 
         let start_time = std::time::Instant::now();
 
-        // Convert OpenAI messages to LightLLM prompt format
+        // Check if this looks like an OpenAI-compatible endpoint
+        let is_openai_compatible = self.base.contains("/v1") || req.stream.unwrap_or(false);
+
+        // Calculate prompt for token counting (needed later)
         let prompt = Self::messages_to_prompt(&req.messages);
         debug!("Converted prompt length: {} characters", prompt.len());
 
-        // Build the LightLLM API endpoint URL
-        let url = format!("{}/generate", self.base);
+        let (url, payload) = if is_openai_compatible {
+            // Use OpenAI-compatible format for streaming or /v1 endpoints
+            let url = if self.base.ends_with("/v1") {
+                format!("{}/chat/completions", self.base)
+            } else {
+                format!("{}/v1/chat/completions", self.base)
+            };
 
-        // Create the LightLLM request payload
-        let payload = serde_json::json!({
-            "prompt": prompt,
-            "max_new_tokens": req.max_tokens.unwrap_or(256),
-            "temperature": req.temperature.unwrap_or(1.0),
-            "top_p": req.top_p.unwrap_or(1.0),
-            "presence_penalty": req.presence_penalty.unwrap_or(0.0),
-            "frequency_penalty": req.frequency_penalty.unwrap_or(0.0),
-        });
+            let payload = serde_json::json!({
+                "model": req.model.as_ref().unwrap_or(&self.model_id),
+                "messages": req.messages,
+                "max_tokens": req.max_tokens.unwrap_or(256),
+                "temperature": req.temperature.unwrap_or(1.0),
+                "top_p": req.top_p.unwrap_or(1.0),
+                "presence_penalty": req.presence_penalty.unwrap_or(0.0),
+                "frequency_penalty": req.frequency_penalty.unwrap_or(0.0),
+                "stream": req.stream.unwrap_or(false),
+            });
+
+            (url, payload)
+        } else {
+            // Use traditional LightLLM format
+            let url = format!("{}/generate", self.base);
+            let payload = serde_json::json!({
+                "prompt": prompt,
+                "max_new_tokens": req.max_tokens.unwrap_or(256),
+                "temperature": req.temperature.unwrap_or(1.0),
+                "top_p": req.top_p.unwrap_or(1.0),
+                "presence_penalty": req.presence_penalty.unwrap_or(0.0),
+                "frequency_penalty": req.frequency_penalty.unwrap_or(0.0),
+            });
+
+            (url, payload)
+        };
 
         // Build the HTTP request with authentication
         let mut request_builder = self.client.post(&url).json(&payload);
@@ -245,7 +265,16 @@ impl LightLLMAdapter {
 
         debug!("Response body size: {} bytes for hash {:x}", response_bytes.len(), request_hash);
 
-        // Parse JSON directly from bytes
+        // If streaming was requested, just return the raw response body for the streaming adapter to handle
+        if req.stream.unwrap_or(false) {
+            let response = Response::builder()
+                .status(status)
+                .body(axum::body::Body::from(response_bytes))
+                .map_err(|e| ProxyError::Internal(format!("Failed to build response: {}", e)))?;
+            return Ok(response);
+        }
+
+        // Parse JSON directly from bytes (for non-streaming responses)
         let json = serde_json::from_slice::<serde_json::Value>(&response_bytes)
             .map_err(|e| {
                 debug!("JSON parsing failed for hash {:x}: {}", request_hash, e);

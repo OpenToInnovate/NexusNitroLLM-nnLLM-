@@ -60,46 +60,56 @@ pub async fn lightllm_streaming(
     adapter: &LightLLMAdapter,
     request: ChatCompletionRequest,
 ) -> Result<StreamingResponse, ProxyError> {
-    // LightLLM doesn't support streaming, so we'll return a non-streaming response
-    // converted to streaming format
+    // Try streaming first, then fallback to non-streaming if needed
     let mut stream_request = request.clone();
-    stream_request.stream = Some(false); // Force non-streaming since LightLLM doesn't support it
-    
-    // Make request to LightLLM
+    stream_request.stream = Some(true);
+
+    // Make request to LightLLM/backend
     let http_response = adapter.chat_completions_http(stream_request).await?;
-    
+
     // Extract response body from HTTP response
     let (_parts, body) = http_response.into_parts();
     let body_bytes = axum::body::to_bytes(body, usize::MAX).await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
-    
-    // Parse JSON response
-    let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
-        .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
-    
-    // Convert response to streaming format
-    let mut state = StreamingState::new(
-        request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
-    );
-    
-    // Extract content from the response
-    let content = json_response
-        .get("choices")
-        .and_then(|choices| choices.as_array())
-        .and_then(|choices| choices.first())
-        .and_then(|choice| choice.get("message"))
-        .and_then(|message| message.get("content"))
-        .and_then(|content| content.as_str())
-        .unwrap_or("")
-        .to_string();
-    
-    let stream = stream::iter(vec![
-        Ok(create_content_event(&mut state, content)),
-        Ok(create_final_event(&mut state)),
-        Ok(create_done_event()),
-    ]);
 
-    Ok(Sse::new(Box::pin(stream)))
+    // Convert the body to string to check if it's SSE format
+    let body_str = String::from_utf8_lossy(&body_bytes);
+
+    // Check if the response is in SSE format (contains "data:" lines)
+    if body_str.contains("data:") {
+        // Parse SSE data and forward the events
+        let events = parse_sse_data(&body_str)?;
+        let stream = stream::iter(events.into_iter().map(Ok));
+        Ok(Sse::new(Box::pin(stream)))
+    } else {
+        // Fallback: treat as regular JSON response and convert to streaming
+        let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
+            .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
+
+        // Convert response to streaming format
+        let mut state = StreamingState::new(
+            request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
+        );
+
+        // Extract content from the response
+        let content = json_response
+            .get("choices")
+            .and_then(|choices| choices.as_array())
+            .and_then(|choices| choices.first())
+            .and_then(|choice| choice.get("message"))
+            .and_then(|message| message.get("content"))
+            .and_then(|content| content.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let stream = stream::iter(vec![
+            Ok(create_content_event(&mut state, content)),
+            Ok(create_final_event(&mut state)),
+            Ok(create_done_event()),
+        ]);
+
+        Ok(Sse::new(Box::pin(stream)))
+    }
 }
 
 /// OpenAI streaming implementation
@@ -110,42 +120,53 @@ pub async fn openai_streaming(
     // Forward streaming request to OpenAI backend
     let mut stream_request = request.clone();
     stream_request.stream = Some(true);
-    
+
     // Make streaming request to OpenAI
     let http_response = adapter.chat_completions_http(stream_request).await?;
-    
+
     // Extract response body from HTTP response
     let (_parts, body) = http_response.into_parts();
     let body_bytes = axum::body::to_bytes(body, usize::MAX).await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
-    
-    // Parse JSON response
-    let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
-        .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
-    
-    // Convert response to streaming format
-    let mut state = StreamingState::new(
-        request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
-    );
-    
-    // Extract content from the response
-    let content = json_response
-        .get("choices")
-        .and_then(|choices| choices.as_array())
-        .and_then(|choices| choices.first())
-        .and_then(|choice| choice.get("message"))
-        .and_then(|message| message.get("content"))
-        .and_then(|content| content.as_str())
-        .unwrap_or("")
-        .to_string();
-    
-    let stream = stream::iter(vec![
-        Ok(create_content_event(&mut state, content)),
-        Ok(create_final_event(&mut state)),
-        Ok(create_done_event()),
-    ]);
 
-    Ok(Sse::new(Box::pin(stream)))
+    // Convert the body to string to check if it's SSE format
+    let body_str = String::from_utf8_lossy(&body_bytes);
+
+    // Check if the response is in SSE format (contains "data:" lines)
+    if body_str.contains("data:") {
+        // Parse SSE data and forward the events
+        let events = parse_sse_data(&body_str)?;
+        let stream = stream::iter(events.into_iter().map(Ok));
+        Ok(Sse::new(Box::pin(stream)))
+    } else {
+        // Fallback: treat as regular JSON response and convert to streaming
+        let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
+            .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
+
+        // Convert response to streaming format
+        let mut state = StreamingState::new(
+            request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
+        );
+
+        // Extract content from the response
+        let content = json_response
+            .get("choices")
+            .and_then(|choices| choices.as_array())
+            .and_then(|choices| choices.first())
+            .and_then(|choice| choice.get("message"))
+            .and_then(|message| message.get("content"))
+            .and_then(|content| content.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let stream = stream::iter(vec![
+            Ok(create_content_event(&mut state, content)),
+            Ok(create_final_event(&mut state)),
+            Ok(create_done_event()),
+        ]);
+
+        Ok(Sse::new(Box::pin(stream)))
+    }
 }
 
 /// vLLM streaming implementation
@@ -257,33 +278,74 @@ pub async fn custom_streaming(
     let body_bytes = axum::body::to_bytes(body, usize::MAX).await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
 
-    // Parse JSON response
-    let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
-        .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
+    // Convert the body to string to check if it's SSE format
+    let body_str = String::from_utf8_lossy(&body_bytes);
 
-    // Convert response to streaming format
-    let mut state = StreamingState::new(
-        request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
-    );
+    // Check if the response is in SSE format (contains "data:" lines)
+    if body_str.contains("data:") {
+        // Parse SSE data and forward the events
+        let events = parse_sse_data(&body_str)?;
+        let stream = stream::iter(events.into_iter().map(Ok));
+        Ok(Sse::new(Box::pin(stream)))
+    } else {
+        // Fallback: treat as regular JSON response and convert to streaming
+        let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
+            .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
 
-    // Extract content from the response
-    let content = json_response
-        .get("choices")
-        .and_then(|choices| choices.as_array())
-        .and_then(|choices| choices.first())
-        .and_then(|choice| choice.get("message"))
-        .and_then(|message| message.get("content"))
-        .and_then(|content| content.as_str())
-        .unwrap_or("")
-        .to_string();
+        // Convert response to streaming format
+        let mut state = StreamingState::new(
+            request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
+        );
 
-    let stream = stream::iter(vec![
-        Ok(create_content_event(&mut state, content)),
-        Ok(create_final_event(&mut state)),
-        Ok(create_done_event()),
-    ]);
+        // Extract content from the response
+        let content = json_response
+            .get("choices")
+            .and_then(|choices| choices.as_array())
+            .and_then(|choices| choices.first())
+            .and_then(|choice| choice.get("message"))
+            .and_then(|message| message.get("content"))
+            .and_then(|content| content.as_str())
+            .unwrap_or("")
+            .to_string();
 
-    Ok(Sse::new(Box::pin(stream)))
+        let stream = stream::iter(vec![
+            Ok(create_content_event(&mut state, content)),
+            Ok(create_final_event(&mut state)),
+            Ok(create_done_event()),
+        ]);
+
+        Ok(Sse::new(Box::pin(stream)))
+    }
+}
+
+/// Parse SSE (Server-Sent Events) data format
+/// Converts "data: {json}\n\ndata: {json}\n\n..." format to Event objects
+fn parse_sse_data(sse_data: &str) -> Result<Vec<Event>, ProxyError> {
+    let mut events = Vec::new();
+
+    for line in sse_data.lines() {
+        let line = line.trim();
+
+        // Handle data lines
+        if line.starts_with("data: ") {
+            let json_data = &line[6..]; // Remove "data: " prefix
+
+            // Handle [DONE] marker
+            if json_data == "[DONE]" {
+                events.push(create_done_event());
+                break;
+            }
+
+            // Try to parse as JSON and create an event
+            if !json_data.is_empty() {
+                let event = Event::default().data(json_data);
+                events.push(event);
+            }
+        }
+        // Skip empty lines and other SSE directives (id:, event:, retry:)
+    }
+
+    Ok(events)
 }
 
 #[cfg(test)]

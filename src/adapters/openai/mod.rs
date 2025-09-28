@@ -102,7 +102,16 @@ impl OpenAIAdapter {
             return Err(ProxyError::Upstream(format!("HTTP {}: {}", status, error_text)));
         }
 
-        // Parse JSON directly from bytes (zero-copy operation)
+        // If streaming was requested, just return the raw response body for the streaming adapter to handle
+        if req.stream.unwrap_or(false) {
+            let response = Response::builder()
+                .status(status)
+                .body(axum::body::Body::from(response_bytes))
+                .map_err(|e| ProxyError::Internal(format!("Failed to build response: {}", e)))?;
+            return Ok(response);
+        }
+
+        // Parse JSON directly from bytes (zero-copy operation) for non-streaming responses
         let json = serde_json::from_slice::<serde_json::Value>(&response_bytes)
             .map_err(|e| {
                 debug!("Failed to parse OpenAI JSON response: {}", e);
