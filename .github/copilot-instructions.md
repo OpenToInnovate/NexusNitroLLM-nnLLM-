@@ -5,8 +5,8 @@
 This is a **multi-target Rust library** providing universal LLM integration with OpenAI-compatible APIs. The project builds 4 artifacts:
 - **Standalone server** (`nnllm` binary) - Production-ready
 - **Rust library** (`nexus_nitro_llm` crate) - Core functionality  
-- **Python bindings** (via PyO3/Maturin) - Alpha status
-- **Node.js bindings** (via NAPI-RS) - Alpha status
+- **Python bindings** (via PyO3/Maturin) - Beta status
+- **Node.js bindings** (via NAPI-RS) - Beta status
 
 ### Core Components
 
@@ -61,10 +61,10 @@ cargo build --release
 cargo test
 cargo run --bin nnllm -- --help
 
-# Python bindings (alpha - build issues)
+# Python bindings (beta - fully functional)
 cd python && maturin develop --release --features python
 
-# Node.js bindings (alpha - linking issues) 
+# Node.js bindings (beta - fully functional) 
 cd nodejs && npm install && npm run build
 
 # Comprehensive test runner
@@ -123,14 +123,14 @@ Custom `ProxyError` enum in `src/error.rs` with structured error responses.
 SSE streaming in `src/streaming/` using `create_streaming_response()` function.
 
 ### Multi-Language Bindings
-- Python: PyO3 bindings in `src/python.rs` (alpha - async issues)
-- Node.js: NAPI-RS bindings in `src/nodejs.rs` (alpha - linking issues)
+- Python: PyO3 bindings in `src/python.rs` (beta - fully functional)
+- Node.js: NAPI-RS bindings in `src/nodejs.rs` (beta - fully functional)
 
-## Current Issues & Status
+## Current Status
 
 - **Rust Server**: ✅ Production-ready, fully functional
-- **Python Bindings**: ⚠️ Alpha - build/async issues  
-- **Node.js Bindings**: ⚠️ Alpha - N-API linking problems
-- See `README.md` "Build Status" section for current limitations
+- **Python Bindings**: ✅ Beta - fully functional, ready for testing
+- **Node.js Bindings**: ✅ Beta - fully functional, ready for testing
+- All language bindings are now operational and can be used for development and testing
 
 When modifying the codebase, ensure feature gates are properly used and consider impact on all 4 build targets.

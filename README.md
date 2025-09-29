@@ -4,7 +4,7 @@
 
 Connect to any LLM backend with a single, unified API. Supports LightLLM, vLLM, OpenAI, Azure, AWS, and custom adapters.
 
-> **⚠️ Status**: The standalone Rust server is stable and production-ready. Node.js and Python bindings are currently in **alpha** and may have build issues. See [Build Status](#build-status) for current limitations.
+> **✅ Status**: The standalone Rust server is stable and production-ready. Node.js and Python bindings are now in **beta** and are fully functional. See [Build Status](#build-status) for details.
 
 ## 🚀 Quick Start
 
@@ -32,9 +32,9 @@ Connect to any LLM backend with a single, unified API. Supports LightLLM, vLLM, 
      }'
    ```
 
-### Option 2: Python Bindings (Alpha)
+### Option 2: Python Bindings (Beta)
 
-> **⚠️ Alpha Status**: Python bindings are currently in development and may have build issues.
+> **✅ Beta Status**: Python bindings are fully functional and ready for testing.
 
 1. **Build the Python bindings**:
    ```bash
@@ -62,9 +62,9 @@ Connect to any LLM backend with a single, unified API. Supports LightLLM, vLLM, 
    print(response)
    ```
 
-### Option 3: Node.js Bindings (Alpha)
+### Option 3: Node.js Bindings (Beta)
 
-> **⚠️ Alpha Status**: Node.js bindings are currently in development and may have linking issues.
+> **✅ Beta Status**: Node.js bindings are fully functional and ready for testing.
 
 1. **Build the Node.js bindings**:
    ```bash
@@ -175,7 +175,7 @@ cargo test
 cargo clippy
 ```
 
-#### 2. Python Bindings (Alpha)
+#### 2. Python Bindings (Beta)
 ```bash
 cd python
 
@@ -192,7 +192,7 @@ maturin develop --release --features python
 python -m pytest tests/ || echo "Tests not available yet"
 ```
 
-#### 3. Node.js Bindings (Alpha)
+#### 3. Node.js Bindings (Beta)
 ```bash
 cd nodejs
 
@@ -241,8 +241,8 @@ This project is licensed under either of:
 | Component | Status | Notes |
 |-----------|--------|-------|
 | **Rust Server** | ✅ Stable | Production-ready, fully tested |
-| **Python Bindings** | ⚠️ Alpha | Build issues with async API, needs fixes |
-| **Node.js Bindings** | ⚠️ Alpha | Native linking issues, N-API problems |
+| **Python Bindings** | ✅ Beta | Fully functional, ready for testing |
+| **Node.js Bindings** | ✅ Beta | Fully functional, ready for testing |
 | **CI/CD** | 🚧 Planned | GitHub Actions setup in progress |
 
 ### Current Known Issues
