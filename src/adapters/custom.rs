@@ -9,9 +9,16 @@ use crate::{
     schemas::{ChatCompletionRequest, ChatCompletionResponse},
 };
 #[cfg(feature = "server")]
-use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use reqwest::Client;
 use tracing::debug;
+
+#[cfg(feature = "server")]
+use std::time::Instant;
 
 /// # Custom Adapter
 ///
@@ -57,8 +64,15 @@ impl CustomAdapter {
 
     /// Process chat completion requests
     #[cfg(feature = "server")]
-    pub async fn chat_completions_http(&self, req: ChatCompletionRequest) -> Result<Response, ProxyError> {
-        AdapterUtils::log_request("custom", &AdapterUtils::extract_model(&req, &self.model_id), req.messages.len());
+    pub async fn chat_completions_http(
+        &self,
+        req: ChatCompletionRequest,
+    ) -> Result<Response, ProxyError> {
+        AdapterUtils::log_request(
+            "custom",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            req.messages.len(),
+        );
 
         let start_time = std::time::Instant::now();
 
@@ -74,42 +88,91 @@ impl CustomAdapter {
         }
 
         // Send the request and await the response
-        let resp = request_builder
-            .send()
-            .await
-            .map_err(|e| {
-                debug!("Custom endpoint request failed: {}", e);
-                ProxyError::Upstream(e.to_string())
-            })?;
+        let resp = request_builder.send().await.map_err(|e| {
+            debug!("Custom endpoint request failed: {}", e);
+            ProxyError::Upstream(e.to_string())
+        })?;
 
         let status = resp.status();
         debug!("Custom endpoint response status: {}", status);
 
-        let response_bytes = resp
-            .bytes()
-            .await
-            .map_err(|e| {
-                debug!("Failed to read custom endpoint response body: {}", e);
-                ProxyError::Upstream(format!("error reading response body: {}", e))
-            })?;
+        let response_bytes = resp.bytes().await.map_err(|e| {
+            debug!("Failed to read custom endpoint response body: {}", e);
+            ProxyError::Upstream(format!("error reading response body: {}", e))
+        })?;
 
         let response_time = start_time.elapsed().as_millis() as u64;
-        AdapterUtils::log_response("custom", &AdapterUtils::extract_model(&req, &self.model_id), status.is_success(), response_time);
+        AdapterUtils::log_response(
+            "custom",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            status.is_success(),
+            response_time,
+        );
 
         if !status.is_success() {
             let error_text = String::from_utf8_lossy(&response_bytes);
             debug!("Custom endpoint error response: {}", error_text);
-            return Err(ProxyError::Upstream(format!("HTTP {}: {}", status, error_text)));
+            return Err(ProxyError::Upstream(format!(
+                "HTTP {}: {}",
+                status, error_text
+            )));
         }
 
-        let json = serde_json::from_slice::<serde_json::Value>(&response_bytes)
-            .map_err(|e| {
-                debug!("Failed to parse custom endpoint JSON response: {}", e);
-                ProxyError::Upstream(format!("error decoding response body: {} (body: {})", e, String::from_utf8_lossy(&response_bytes)))
-            })?;
+        let json = serde_json::from_slice::<serde_json::Value>(&response_bytes).map_err(|e| {
+            debug!("Failed to parse custom endpoint JSON response: {}", e);
+            ProxyError::Upstream(format!(
+                "error decoding response body: {} (body: {})",
+                e,
+                String::from_utf8_lossy(&response_bytes)
+            ))
+        })?;
 
         debug!("Successfully forwarded custom endpoint request");
         Ok((StatusCode::OK, Json(json)).into_response())
+    }
+
+    /// Perform a raw streaming request without buffering the upstream body
+    #[cfg(feature = "server")]
+    pub async fn stream_chat_completions_raw(
+        &self,
+        req: ChatCompletionRequest,
+    ) -> Result<reqwest::Response, ProxyError> {
+        let model_name = AdapterUtils::extract_model(&req, &self.model_id);
+        AdapterUtils::log_request("custom", &model_name, req.messages.len());
+
+        let start_time = Instant::now();
+
+        let url = format!("{}/chat/completions", self.base_url);
+        let mut request_builder = self.client.post(url).json(&req);
+
+        if let Some(token) = &self.token {
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        }
+
+        let resp = request_builder.send().await.map_err(|e| {
+            debug!("Custom streaming request failed: {}", e);
+            ProxyError::Upstream(e.to_string())
+        })?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let response_bytes = resp.bytes().await.map_err(|e| {
+                debug!("Failed to read custom streaming error body: {}", e);
+                ProxyError::Upstream(format!("error reading response body: {}", e))
+            })?;
+
+            let error_text = String::from_utf8_lossy(&response_bytes);
+            debug!("Custom streaming error response: {}", error_text);
+            return Err(ProxyError::Upstream(format!(
+                "HTTP {}: {}",
+                status, error_text
+            )));
+        }
+
+        let handshake_time = start_time.elapsed().as_millis() as u64;
+        AdapterUtils::log_response("custom", &model_name, true, handshake_time);
+
+        Ok(resp)
     }
 }
 
@@ -132,7 +195,10 @@ impl AdapterTrait for CustomAdapter {
     }
 
     #[cfg(feature = "server")]
-    async fn chat_completions(&self, request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
+    async fn chat_completions(
+        &self,
+        request: ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ProxyError> {
         let http_response = self.chat_completions_http(request).await?;
 
         // Extract the response body
@@ -145,11 +211,15 @@ impl AdapterTrait for CustomAdapter {
             .map_err(|e| ProxyError::Internal(format!("Failed to parse response JSON: {}", e)))?;
 
         Ok(response)
-        
     }
 
     #[cfg(not(feature = "server"))]
-    async fn chat_completions(&self, _request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
-        Err(ProxyError::Internal("Server feature not enabled".to_string()))
+    async fn chat_completions(
+        &self,
+        _request: ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ProxyError> {
+        Err(ProxyError::Internal(
+            "Server feature not enabled".to_string(),
+        ))
     }
 }

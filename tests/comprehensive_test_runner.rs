@@ -103,7 +103,9 @@ impl TestSuiteRunner {
             for language_binding in &self.config.language_bindings {
                 println!("  🔧 Testing {} binding", language_binding);
                 
-                let result = self.run_test_category(category, language_binding);
+                let result = self
+                    .run_test_category(category, language_binding)
+                    .await;
                 results.push(result);
             }
         }
@@ -599,7 +601,7 @@ impl TestSuiteRunner {
 #[tokio::test]
 async fn test_comprehensive_test_runner() {
     let runner = TestSuiteRunner::new();
-    let results = runner.run_all_tests();
+    let results = runner.run_all_tests().await;
     
     // Verify that all tests completed
     assert!(!results.is_empty());
@@ -617,7 +619,7 @@ async fn test_comprehensive_integration_suite() {
     println!("🚀 Starting comprehensive integration test suite");
     
     let runner = TestSuiteRunner::new();
-    let results = runner.run_all_tests();
+    let results = runner.run_all_tests().await;
     
     // Verify that all test categories were covered
     let expected_categories = vec![

@@ -2,18 +2,27 @@
 //!
 //! This module contains adapter-specific streaming implementations
 
+use crate::core::http_client::HttpClientBuilder;
 use crate::{
-    adapters::{LightLLMAdapter, OpenAIAdapter, VLLMAdapter, AzureOpenAIAdapter, CustomAdapter},
+    adapters::{AzureOpenAIAdapter, CustomAdapter, LightLLMAdapter, OpenAIAdapter, VLLMAdapter},
     error::ProxyError,
     schemas::ChatCompletionRequest,
-    streaming::core::{StreamingState, create_content_event, create_final_event, create_done_event},
+    streaming::core::{
+        create_content_event, create_done_event, create_error_event, create_final_event,
+        StreamingState,
+    },
 };
-use crate::core::http_client::HttpClientBuilder;
-use axum::response::{Sse, sse::Event};
-use futures_util::stream::{self, Stream};
-use reqwest::Client;
+use axum::response::{sse::Event, Sse};
+use futures_util::{
+    stream::{self, Stream},
+    StreamExt,
+};
+use reqwest::header::CONTENT_TYPE;
+use reqwest::{Client, Response as ReqwestResponse};
 use std::convert::Infallible;
 use std::pin::Pin;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 
 /// Common streaming response type
 pub type StreamingResponse = Sse<Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>>>;
@@ -64,52 +73,45 @@ pub async fn lightllm_streaming(
     let mut stream_request = request.clone();
     stream_request.stream = Some(true);
 
-    // Make request to LightLLM/backend
-    let http_response = adapter.chat_completions_http(stream_request).await?;
+    let http_response = adapter.stream_chat_completions_raw(stream_request).await?;
 
-    // Extract response body from HTTP response
-    let (_parts, body) = http_response.into_parts();
-    let body_bytes = axum::body::to_bytes(body, usize::MAX).await
+    if is_event_stream(&http_response) {
+        return forward_sse_response(http_response);
+    }
+
+    let response = http_response;
+    let body_bytes = response
+        .bytes()
+        .await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
 
-    // Convert the body to string to check if it's SSE format
-    let body_str = String::from_utf8_lossy(&body_bytes);
+    let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
+        .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
 
-    // Check if the response is in SSE format (contains "data:" lines)
-    if body_str.contains("data:") {
-        // Parse SSE data and forward the events
-        let events = parse_sse_data(&body_str)?;
-        let stream = stream::iter(events.into_iter().map(Ok));
-        Ok(Sse::new(Box::pin(stream)))
-    } else {
-        // Fallback: treat as regular JSON response and convert to streaming
-        let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
-            .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
+    let mut state = StreamingState::new(
+        request
+            .model
+            .clone()
+            .unwrap_or_else(|| adapter.model_id().to_string()),
+    );
 
-        // Convert response to streaming format
-        let mut state = StreamingState::new(
-            request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
-        );
+    let content = json_response
+        .get("choices")
+        .and_then(|choices| choices.as_array())
+        .and_then(|choices| choices.first())
+        .and_then(|choice| choice.get("message"))
+        .and_then(|message| message.get("content"))
+        .and_then(|content| content.as_str())
+        .unwrap_or("")
+        .to_string();
 
-        // Extract content from the response
-        let content = json_response
-            .get("choices")
-            .and_then(|choices| choices.as_array())
-            .and_then(|choices| choices.first())
-            .and_then(|choice| choice.get("message"))
-            .and_then(|message| message.get("content"))
-            .and_then(|content| content.as_str())
-            .unwrap_or("")
-            .to_string();
+    let stream = stream::iter(vec![
+        Ok(create_content_event(&mut state, content)),
+        Ok(create_final_event(&mut state)),
+        Ok(create_done_event()),
+    ]);
 
-        let stream = stream::iter(vec![
-            Ok(create_content_event(&mut state, content)),
-            Ok(create_final_event(&mut state)),
-            Ok(create_done_event()),
-        ]);
-
-        Ok(Sse::new(Box::pin(stream)))
-    }
+    Ok(Sse::new(Box::pin(stream)))
 }
 
 /// OpenAI streaming implementation
@@ -117,56 +119,48 @@ pub async fn openai_streaming(
     adapter: &OpenAIAdapter,
     request: ChatCompletionRequest,
 ) -> Result<StreamingResponse, ProxyError> {
-    // Forward streaming request to OpenAI backend
     let mut stream_request = request.clone();
     stream_request.stream = Some(true);
 
-    // Make streaming request to OpenAI
-    let http_response = adapter.chat_completions_http(stream_request).await?;
+    let http_response = adapter.stream_chat_completions_raw(stream_request).await?;
 
-    // Extract response body from HTTP response
-    let (_parts, body) = http_response.into_parts();
-    let body_bytes = axum::body::to_bytes(body, usize::MAX).await
+    if is_event_stream(&http_response) {
+        return forward_sse_response(http_response);
+    }
+
+    let response = http_response;
+    let body_bytes = response
+        .bytes()
+        .await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
 
-    // Convert the body to string to check if it's SSE format
-    let body_str = String::from_utf8_lossy(&body_bytes);
+    let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
+        .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
 
-    // Check if the response is in SSE format (contains "data:" lines)
-    if body_str.contains("data:") {
-        // Parse SSE data and forward the events
-        let events = parse_sse_data(&body_str)?;
-        let stream = stream::iter(events.into_iter().map(Ok));
-        Ok(Sse::new(Box::pin(stream)))
-    } else {
-        // Fallback: treat as regular JSON response and convert to streaming
-        let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
-            .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
+    let mut state = StreamingState::new(
+        request
+            .model
+            .clone()
+            .unwrap_or_else(|| adapter.model_id().to_string()),
+    );
 
-        // Convert response to streaming format
-        let mut state = StreamingState::new(
-            request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
-        );
+    let content = json_response
+        .get("choices")
+        .and_then(|choices| choices.as_array())
+        .and_then(|choices| choices.first())
+        .and_then(|choice| choice.get("message"))
+        .and_then(|message| message.get("content"))
+        .and_then(|content| content.as_str())
+        .unwrap_or("")
+        .to_string();
 
-        // Extract content from the response
-        let content = json_response
-            .get("choices")
-            .and_then(|choices| choices.as_array())
-            .and_then(|choices| choices.first())
-            .and_then(|choice| choice.get("message"))
-            .and_then(|message| message.get("content"))
-            .and_then(|content| content.as_str())
-            .unwrap_or("")
-            .to_string();
+    let stream = stream::iter(vec![
+        Ok(create_content_event(&mut state, content)),
+        Ok(create_final_event(&mut state)),
+        Ok(create_done_event()),
+    ]);
 
-        let stream = stream::iter(vec![
-            Ok(create_content_event(&mut state, content)),
-            Ok(create_final_event(&mut state)),
-            Ok(create_done_event()),
-        ]);
-
-        Ok(Sse::new(Box::pin(stream)))
-    }
+    Ok(Sse::new(Box::pin(stream)))
 }
 
 /// vLLM streaming implementation
@@ -177,24 +171,28 @@ pub async fn vllm_streaming(
     // Forward streaming request to vLLM backend
     let mut stream_request = request.clone();
     stream_request.stream = Some(true);
-    
+
     // Make streaming request to vLLM
     let http_response = adapter.chat_completions_http(stream_request).await?;
-    
+
     // Extract response body from HTTP response
     let (_parts, body) = http_response.into_parts();
-    let body_bytes = axum::body::to_bytes(body, usize::MAX).await
+    let body_bytes = axum::body::to_bytes(body, usize::MAX)
+        .await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
-    
+
     // Parse JSON response
     let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
         .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
-    
+
     // Convert response to streaming format
     let mut state = StreamingState::new(
-        request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
+        request
+            .model
+            .clone()
+            .unwrap_or_else(|| adapter.model_id().to_string()),
     );
-    
+
     // Extract content from the response
     let content = json_response
         .get("choices")
@@ -205,7 +203,7 @@ pub async fn vllm_streaming(
         .and_then(|content| content.as_str())
         .unwrap_or("")
         .to_string();
-    
+
     let stream = stream::iter(vec![
         Ok(create_content_event(&mut state, content)),
         Ok(create_final_event(&mut state)),
@@ -229,7 +227,8 @@ pub async fn azure_streaming(
 
     // Extract response body from HTTP response
     let (_parts, body) = http_response.into_parts();
-    let body_bytes = axum::body::to_bytes(body, usize::MAX).await
+    let body_bytes = axum::body::to_bytes(body, usize::MAX)
+        .await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
 
     // Parse JSON response
@@ -238,7 +237,10 @@ pub async fn azure_streaming(
 
     // Convert response to streaming format
     let mut state = StreamingState::new(
-        request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
+        request
+            .model
+            .clone()
+            .unwrap_or_else(|| adapter.model_id().to_string()),
     );
 
     // Extract content from the response
@@ -266,60 +268,53 @@ pub async fn custom_streaming(
     adapter: &CustomAdapter,
     request: ChatCompletionRequest,
 ) -> Result<StreamingResponse, ProxyError> {
-    // Forward streaming request to custom endpoint
     let mut stream_request = request.clone();
     stream_request.stream = Some(true);
 
-    // Make streaming request to custom endpoint
-    let http_response = adapter.chat_completions_http(stream_request).await?;
+    let http_response = adapter.stream_chat_completions_raw(stream_request).await?;
 
-    // Extract response body from HTTP response
-    let (_parts, body) = http_response.into_parts();
-    let body_bytes = axum::body::to_bytes(body, usize::MAX).await
+    if is_event_stream(&http_response) {
+        return forward_sse_response(http_response);
+    }
+
+    let response = http_response;
+    let body_bytes = response
+        .bytes()
+        .await
         .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
 
-    // Convert the body to string to check if it's SSE format
-    let body_str = String::from_utf8_lossy(&body_bytes);
+    let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
+        .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
 
-    // Check if the response is in SSE format (contains "data:" lines)
-    if body_str.contains("data:") {
-        // Parse SSE data and forward the events
-        let events = parse_sse_data(&body_str)?;
-        let stream = stream::iter(events.into_iter().map(Ok));
-        Ok(Sse::new(Box::pin(stream)))
-    } else {
-        // Fallback: treat as regular JSON response and convert to streaming
-        let json_response: serde_json::Value = serde_json::from_slice(&body_bytes)
-            .map_err(|e| ProxyError::Internal(format!("Failed to parse JSON response: {}", e)))?;
+    let mut state = StreamingState::new(
+        request
+            .model
+            .clone()
+            .unwrap_or_else(|| adapter.model_id().to_string()),
+    );
 
-        // Convert response to streaming format
-        let mut state = StreamingState::new(
-            request.model.clone().unwrap_or_else(|| adapter.model_id().to_string())
-        );
+    let content = json_response
+        .get("choices")
+        .and_then(|choices| choices.as_array())
+        .and_then(|choices| choices.first())
+        .and_then(|choice| choice.get("message"))
+        .and_then(|message| message.get("content"))
+        .and_then(|content| content.as_str())
+        .unwrap_or("")
+        .to_string();
 
-        // Extract content from the response
-        let content = json_response
-            .get("choices")
-            .and_then(|choices| choices.as_array())
-            .and_then(|choices| choices.first())
-            .and_then(|choice| choice.get("message"))
-            .and_then(|message| message.get("content"))
-            .and_then(|content| content.as_str())
-            .unwrap_or("")
-            .to_string();
+    let stream = stream::iter(vec![
+        Ok(create_content_event(&mut state, content)),
+        Ok(create_final_event(&mut state)),
+        Ok(create_done_event()),
+    ]);
 
-        let stream = stream::iter(vec![
-            Ok(create_content_event(&mut state, content)),
-            Ok(create_final_event(&mut state)),
-            Ok(create_done_event()),
-        ]);
-
-        Ok(Sse::new(Box::pin(stream)))
-    }
+    Ok(Sse::new(Box::pin(stream)))
 }
 
 /// Parse SSE (Server-Sent Events) data format
 /// Converts "data: {json}\n\ndata: {json}\n\n..." format to Event objects
+#[allow(dead_code)]
 fn parse_sse_data(sse_data: &str) -> Result<Vec<Event>, ProxyError> {
     let mut events = Vec::new();
 
@@ -346,6 +341,86 @@ fn parse_sse_data(sse_data: &str) -> Result<Vec<Event>, ProxyError> {
     }
 
     Ok(events)
+}
+
+fn is_event_stream(response: &ReqwestResponse) -> bool {
+    response
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.contains("text/event-stream"))
+        .unwrap_or(false)
+}
+
+fn forward_sse_response(response: ReqwestResponse) -> Result<StreamingResponse, ProxyError> {
+    let (tx, rx) = mpsc::channel::<Result<Event, Infallible>>(32);
+
+    tokio::spawn(async move {
+        let mut buffer = String::new();
+        let mut finished = false;
+        let mut stream = response.bytes_stream();
+
+        while let Some(chunk_result) = stream.next().await {
+            match chunk_result {
+                Ok(bytes) => {
+                    buffer.push_str(&String::from_utf8_lossy(&bytes));
+
+                    while let Some(idx) = buffer.find("\n\n") {
+                        let block = buffer[..idx].to_string();
+                        buffer.drain(..idx + 2);
+
+                        let mut block_finished = false;
+                        for line in block.lines() {
+                            if let Some(data) = line.strip_prefix("data: ") {
+                                if data == "[DONE]" {
+                                    block_finished = true;
+                                    finished = true;
+                                    if tx.send(Ok(create_done_event())).await.is_err() {
+                                        return;
+                                    }
+                                    break;
+                                }
+
+                                if data.is_empty() {
+                                    continue;
+                                }
+
+                                let event = Event::default().data(data.to_string());
+                                if tx.send(Ok(event)).await.is_err() {
+                                    return;
+                                }
+                            }
+                        }
+
+                        if block_finished {
+                            break;
+                        }
+                    }
+
+                    if finished {
+                        break;
+                    }
+                }
+                Err(err) => {
+                    let _ = tx
+                        .send(Ok(create_error_event(ProxyError::Upstream(
+                            err.to_string(),
+                        ))))
+                        .await;
+                    let _ = tx.send(Ok(create_done_event())).await;
+                    return;
+                }
+            }
+        }
+
+        if !finished {
+            let _ = tx.send(Ok(create_done_event())).await;
+        }
+    });
+
+    let stream = ReceiverStream::new(rx);
+    let boxed: Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> = Box::pin(stream);
+    Ok(Sse::new(boxed))
 }
 
 #[cfg(test)]

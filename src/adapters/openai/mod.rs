@@ -16,9 +16,16 @@ use crate::{
     schemas::{ChatCompletionRequest, ChatCompletionResponse},
 };
 #[cfg(feature = "server")]
-use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use reqwest::Client;
 use tracing::debug;
+
+#[cfg(feature = "server")]
+use std::time::Instant;
 
 /// # OpenAI Adapter
 ///
@@ -53,10 +60,61 @@ impl OpenAIAdapter {
         &self.model_id
     }
 
+    /// Perform a raw streaming request and return the upstream response without buffering
+    #[cfg(feature = "server")]
+    pub async fn stream_chat_completions_raw(
+        &self,
+        req: ChatCompletionRequest,
+    ) -> Result<reqwest::Response, ProxyError> {
+        let model_name = AdapterUtils::extract_model(&req, &self.model_id);
+        AdapterUtils::log_request("openai", &model_name, req.messages.len());
+
+        let start_time = Instant::now();
+
+        let url = format!("{}/chat/completions", self.base);
+        let mut request_builder = self.client.post(url).json(&req);
+
+        if let Some(token) = &self.token {
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        }
+
+        let resp = request_builder.send().await.map_err(|e| {
+            debug!("OpenAI streaming request failed: {}", e);
+            ProxyError::Upstream(e.to_string())
+        })?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let response_bytes = resp.bytes().await.map_err(|e| {
+                debug!("Failed to read OpenAI streaming error body: {}", e);
+                ProxyError::Upstream(format!("error reading response body: {}", e))
+            })?;
+
+            let error_text = String::from_utf8_lossy(&response_bytes);
+            debug!("OpenAI streaming error response: {}", error_text);
+            return Err(ProxyError::Upstream(format!(
+                "HTTP {}: {}",
+                status, error_text
+            )));
+        }
+
+        let handshake_time = start_time.elapsed().as_millis() as u64;
+        AdapterUtils::log_response("openai", &model_name, true, handshake_time);
+
+        Ok(resp)
+    }
+
     /// Process chat completion requests with direct forwarding
     #[cfg(feature = "server")]
-    pub async fn chat_completions_http(&self, req: ChatCompletionRequest) -> Result<Response, ProxyError> {
-        AdapterUtils::log_request("openai", &AdapterUtils::extract_model(&req, &self.model_id), req.messages.len());
+    pub async fn chat_completions_http(
+        &self,
+        req: ChatCompletionRequest,
+    ) -> Result<Response, ProxyError> {
+        AdapterUtils::log_request(
+            "openai",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            req.messages.len(),
+        );
 
         let start_time = std::time::Instant::now();
 
@@ -72,34 +130,36 @@ impl OpenAIAdapter {
         }
 
         // Send the request and await the response
-        let resp = request_builder
-            .send()
-            .await
-            .map_err(|e| {
-                debug!("OpenAI request failed: {}", e);
-                ProxyError::Upstream(e.to_string())
-            })?;
+        let resp = request_builder.send().await.map_err(|e| {
+            debug!("OpenAI request failed: {}", e);
+            ProxyError::Upstream(e.to_string())
+        })?;
 
         let status = resp.status();
         debug!("OpenAI response status: {}", status);
 
         // Use bytes() instead of text() to avoid unnecessary string conversion
-        let response_bytes = resp
-            .bytes()
-            .await
-            .map_err(|e| {
-                debug!("Failed to read OpenAI response body: {}", e);
-                ProxyError::Upstream(format!("error reading response body: {}", e))
-            })?;
+        let response_bytes = resp.bytes().await.map_err(|e| {
+            debug!("Failed to read OpenAI response body: {}", e);
+            ProxyError::Upstream(format!("error reading response body: {}", e))
+        })?;
 
         let response_time = start_time.elapsed().as_millis() as u64;
-        AdapterUtils::log_response("openai", &AdapterUtils::extract_model(&req, &self.model_id), status.is_success(), response_time);
+        AdapterUtils::log_response(
+            "openai",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            status.is_success(),
+            response_time,
+        );
 
         // Check if the request was successful
         if !status.is_success() {
             let error_text = String::from_utf8_lossy(&response_bytes);
             debug!("OpenAI error response: {}", error_text);
-            return Err(ProxyError::Upstream(format!("HTTP {}: {}", status, error_text)));
+            return Err(ProxyError::Upstream(format!(
+                "HTTP {}: {}",
+                status, error_text
+            )));
         }
 
         // If streaming was requested, just return the raw response body for the streaming adapter to handle
@@ -112,11 +172,14 @@ impl OpenAIAdapter {
         }
 
         // Parse JSON directly from bytes (zero-copy operation) for non-streaming responses
-        let json = serde_json::from_slice::<serde_json::Value>(&response_bytes)
-            .map_err(|e| {
-                debug!("Failed to parse OpenAI JSON response: {}", e);
-                ProxyError::Upstream(format!("error decoding response body: {} (body: {})", e, String::from_utf8_lossy(&response_bytes)))
-            })?;
+        let json = serde_json::from_slice::<serde_json::Value>(&response_bytes).map_err(|e| {
+            debug!("Failed to parse OpenAI JSON response: {}", e);
+            ProxyError::Upstream(format!(
+                "error decoding response body: {} (body: {})",
+                e,
+                String::from_utf8_lossy(&response_bytes)
+            ))
+        })?;
 
         debug!("Successfully forwarded OpenAI request");
 
@@ -144,7 +207,10 @@ impl AdapterTrait for OpenAIAdapter {
     }
 
     #[cfg(feature = "server")]
-    async fn chat_completions(&self, request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
+    async fn chat_completions(
+        &self,
+        request: ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ProxyError> {
         // Get the HTTP response from the HTTP implementation
         let http_response = self.chat_completions_http(request).await?;
 
@@ -161,8 +227,13 @@ impl AdapterTrait for OpenAIAdapter {
     }
 
     #[cfg(not(feature = "server"))]
-    async fn chat_completions(&self, _request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
-        Err(ProxyError::Internal("Server feature not enabled".to_string()))
+    async fn chat_completions(
+        &self,
+        _request: ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ProxyError> {
+        Err(ProxyError::Internal(
+            "Server feature not enabled".to_string(),
+        ))
     }
 }
 

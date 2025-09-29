@@ -15,13 +15,20 @@ use crate::{
     schemas::{ChatCompletionRequest, ChatCompletionResponse, Message},
 };
 #[cfg(feature = "server")]
-use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use reqwest::Client;
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
 };
 use tracing::debug;
+
+#[cfg(feature = "server")]
+use std::time::Instant;
 
 /// # Role Enum for LightLLM Format
 ///
@@ -83,13 +90,14 @@ impl LightLLMAdapter {
     /// advanced memory optimization and capacity estimation.
     fn messages_to_prompt(messages: &[Message]) -> String {
         // Enhanced capacity estimation for better memory management
-        let estimated_capacity = messages.iter()
+        let estimated_capacity = messages
+            .iter()
             .map(|msg| {
-                msg.role.len() +
-                msg.content.as_ref().map(|c| c.len()).unwrap_or(0) +
-                25 // Role markers overhead: "<|role|>\n" + "\n" + safety
+                msg.role.len() + msg.content.as_ref().map(|c| c.len()).unwrap_or(0) + 25
+                // Role markers overhead: "<|role|>\n" + "\n" + safety
             })
-            .sum::<usize>() + 25; // +25 for final assistant marker + safety buffer
+            .sum::<usize>()
+            + 25; // +25 for final assistant marker + safety buffer
 
         let mut out = String::with_capacity(estimated_capacity);
 
@@ -129,8 +137,10 @@ impl LightLLMAdapter {
         // Verify capacity utilization for performance monitoring
         let actual_capacity = out.capacity();
         if actual_capacity > estimated_capacity * 2 {
-            debug!("Capacity over-allocation detected: estimated={}, actual={}",
-                   estimated_capacity, actual_capacity);
+            debug!(
+                "Capacity over-allocation detected: estimated={}, actual={}",
+                estimated_capacity, actual_capacity
+            );
         }
 
         out
@@ -183,13 +193,20 @@ impl LightLLMAdapter {
 
     /// Process chat completion requests with advanced optimizations
     #[cfg(feature = "server")]
-    pub async fn chat_completions_http(&self, req: ChatCompletionRequest) -> Result<Response, ProxyError> {
+    pub async fn chat_completions_http(
+        &self,
+        req: ChatCompletionRequest,
+    ) -> Result<Response, ProxyError> {
         // Note: This adapter now supports OpenAI-compatible endpoints that may support streaming
 
         let request_hash = Self::calculate_request_hash(&req);
         debug!("Processing LightLLM request with hash: {:x}", request_hash);
 
-        AdapterUtils::log_request("lightllm", &AdapterUtils::extract_model(&req, &self.model_id), req.messages.len());
+        AdapterUtils::log_request(
+            "lightllm",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            req.messages.len(),
+        );
 
         let start_time = std::time::Instant::now();
 
@@ -208,16 +225,27 @@ impl LightLLMAdapter {
                 format!("{}/v1/chat/completions", self.base)
             };
 
-            let payload = serde_json::json!({
+            // Build payload for OpenAI-compatible format
+            let mut payload = serde_json::json!({
                 "model": req.model.as_ref().unwrap_or(&self.model_id),
                 "messages": req.messages,
                 "max_tokens": req.max_tokens.unwrap_or(256),
                 "temperature": req.temperature.unwrap_or(1.0),
                 "top_p": req.top_p.unwrap_or(1.0),
-                "presence_penalty": req.presence_penalty.unwrap_or(0.0),
-                "frequency_penalty": req.frequency_penalty.unwrap_or(0.0),
                 "stream": req.stream.unwrap_or(false),
             });
+
+            // Only add penalty parameters if they are non-zero (to avoid LiteLLM issues)
+            if let Some(presence_penalty) = req.presence_penalty {
+                if presence_penalty != 0.0 {
+                    payload["presence_penalty"] = serde_json::Value::from(presence_penalty);
+                }
+            }
+            if let Some(frequency_penalty) = req.frequency_penalty {
+                if frequency_penalty != 0.0 {
+                    payload["frequency_penalty"] = serde_json::Value::from(frequency_penalty);
+                }
+            }
 
             (url, payload)
         } else {
@@ -243,27 +271,31 @@ impl LightLLMAdapter {
         }
 
         // Send the request and await the response
-        let resp = request_builder
-            .send()
-            .await
-            .map_err(|e| {
-                debug!("HTTP request failed for hash {:x}: {}", request_hash, e);
-                ProxyError::from(e)
-            })?;
+        let resp = request_builder.send().await.map_err(|e| {
+            debug!("HTTP request failed for hash {:x}: {}", request_hash, e);
+            ProxyError::from(e)
+        })?;
 
         let status = resp.status();
-        debug!("Received response status: {} for hash {:x}", status, request_hash);
+        debug!(
+            "Received response status: {} for hash {:x}",
+            status, request_hash
+        );
 
         // Read response body
-        let response_bytes = resp
-            .bytes()
-            .await
-            .map_err(|e| {
-                debug!("Failed to read response body for hash {:x}: {}", request_hash, e);
-                ProxyError::Upstream(format!("error reading response body: {}", e))
-            })?;
+        let response_bytes = resp.bytes().await.map_err(|e| {
+            debug!(
+                "Failed to read response body for hash {:x}: {}",
+                request_hash, e
+            );
+            ProxyError::Upstream(format!("error reading response body: {}", e))
+        })?;
 
-        debug!("Response body size: {} bytes for hash {:x}", response_bytes.len(), request_hash);
+        debug!(
+            "Response body size: {} bytes for hash {:x}",
+            response_bytes.len(),
+            request_hash
+        );
 
         // If streaming was requested, just return the raw response body for the streaming adapter to handle
         if req.stream.unwrap_or(false) {
@@ -275,28 +307,40 @@ impl LightLLMAdapter {
         }
 
         // Parse JSON directly from bytes (for non-streaming responses)
-        let json = serde_json::from_slice::<serde_json::Value>(&response_bytes)
-            .map_err(|e| {
-                debug!("JSON parsing failed for hash {:x}: {}", request_hash, e);
-                ProxyError::Upstream(format!("error decoding response body: {} (body: {})", e, String::from_utf8_lossy(&response_bytes)))
-            })?;
+        let json = serde_json::from_slice::<serde_json::Value>(&response_bytes).map_err(|e| {
+            debug!("JSON parsing failed for hash {:x}: {}", request_hash, e);
+            ProxyError::Upstream(format!(
+                "error decoding response body: {} (body: {})",
+                e,
+                String::from_utf8_lossy(&response_bytes)
+            ))
+        })?;
 
         // Check if the request was successful
         if !status.is_success() {
-            debug!("Backend returned error status {} for hash {:x}", status, request_hash);
+            debug!(
+                "Backend returned error status {} for hash {:x}",
+                status, request_hash
+            );
             return Err(ProxyError::Upstream(json.to_string()));
         }
 
         // Extract the generated text from the response
-        let text = json
-            .get("text")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let text = json.get("text").and_then(|v| v.as_str()).unwrap_or("");
 
-        debug!("Extracted response text length: {} characters for hash {:x}", text.len(), request_hash);
+        debug!(
+            "Extracted response text length: {} characters for hash {:x}",
+            text.len(),
+            request_hash
+        );
 
         let response_time = start_time.elapsed().as_millis() as u64;
-        AdapterUtils::log_response("lightllm", &AdapterUtils::extract_model(&req, &self.model_id), true, response_time);
+        AdapterUtils::log_response(
+            "lightllm",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            true,
+            response_time,
+        );
 
         // Generate a unique ID for the response
         let now = AdapterUtils::current_timestamp() as i64;
@@ -324,6 +368,113 @@ impl LightLLMAdapter {
         // Return the response as an HTTP response
         Ok((StatusCode::OK, Json(envelope)).into_response())
     }
+
+    /// Perform a raw streaming request without buffering the upstream body
+    #[cfg(feature = "server")]
+    pub async fn stream_chat_completions_raw(
+        &self,
+        req: ChatCompletionRequest,
+    ) -> Result<reqwest::Response, ProxyError> {
+        let request_hash = Self::calculate_request_hash(&req);
+        AdapterUtils::log_request(
+            "lightllm",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            req.messages.len(),
+        );
+
+        let start_time = Instant::now();
+
+        let is_openai_compatible = self.base.contains("/v1") || req.stream.unwrap_or(false);
+        let prompt = Self::messages_to_prompt(&req.messages);
+
+        let (url, payload) = if is_openai_compatible {
+            let url = if self.base.ends_with("/v1") {
+                format!("{}/chat/completions", self.base)
+            } else {
+                format!("{}/v1/chat/completions", self.base)
+            };
+
+            let mut payload = serde_json::json!({
+                "model": req.model.as_ref().unwrap_or(&self.model_id),
+                "messages": req.messages.clone(),
+                "max_tokens": req.max_tokens.unwrap_or(256),
+                "temperature": req.temperature.unwrap_or(1.0),
+                "top_p": req.top_p.unwrap_or(1.0),
+                "stream": true,
+            });
+
+            if let Some(presence_penalty) = req.presence_penalty {
+                if presence_penalty != 0.0 {
+                    payload["presence_penalty"] = serde_json::Value::from(presence_penalty);
+                }
+            }
+            if let Some(frequency_penalty) = req.frequency_penalty {
+                if frequency_penalty != 0.0 {
+                    payload["frequency_penalty"] = serde_json::Value::from(frequency_penalty);
+                }
+            }
+
+            (url, payload)
+        } else {
+            let url = format!("{}/generate", self.base);
+            let payload = serde_json::json!({
+                "prompt": prompt,
+                "max_new_tokens": req.max_tokens.unwrap_or(256),
+                "temperature": req.temperature.unwrap_or(1.0),
+                "top_p": req.top_p.unwrap_or(1.0),
+                "presence_penalty": req.presence_penalty.unwrap_or(0.0),
+                "frequency_penalty": req.frequency_penalty.unwrap_or(0.0),
+                "stream": true,
+            });
+
+            (url, payload)
+        };
+
+        let mut request_builder = self.client.post(&url).json(&payload);
+
+        if let Some(token) = &self.token {
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        }
+
+        let resp = request_builder.send().await.map_err(|e| {
+            debug!(
+                "Streaming HTTP request failed for hash {:x}: {}",
+                request_hash, e
+            );
+            ProxyError::from(e)
+        })?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let response_bytes = resp.bytes().await.map_err(|e| {
+                debug!(
+                    "Failed to read streaming response body for hash {:x}: {}",
+                    request_hash, e
+                );
+                ProxyError::Upstream(format!("error reading response body: {}", e))
+            })?;
+
+            let error_text = String::from_utf8_lossy(&response_bytes);
+            debug!(
+                "Streaming backend returned error status {} for hash {:x}: {}",
+                status, request_hash, error_text
+            );
+            return Err(ProxyError::Upstream(format!(
+                "HTTP {}: {}",
+                status, error_text
+            )));
+        }
+
+        let handshake_time = start_time.elapsed().as_millis() as u64;
+        AdapterUtils::log_response(
+            "lightllm",
+            &AdapterUtils::extract_model(&req, &self.model_id),
+            true,
+            handshake_time,
+        );
+
+        Ok(resp)
+    }
 }
 
 #[async_trait::async_trait]
@@ -345,7 +496,10 @@ impl AdapterTrait for LightLLMAdapter {
     }
 
     #[cfg(feature = "server")]
-    async fn chat_completions(&self, request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
+    async fn chat_completions(
+        &self,
+        request: ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ProxyError> {
         // Get the HTTP response from the HTTP implementation
         let http_response = self.chat_completions_http(request).await?;
 
@@ -362,8 +516,13 @@ impl AdapterTrait for LightLLMAdapter {
     }
 
     #[cfg(not(feature = "server"))]
-    async fn chat_completions(&self, _request: ChatCompletionRequest) -> Result<ChatCompletionResponse, ProxyError> {
-        Err(ProxyError::Internal("Server feature not enabled".to_string()))
+    async fn chat_completions(
+        &self,
+        _request: ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ProxyError> {
+        Err(ProxyError::Internal(
+            "Server feature not enabled".to_string(),
+        ))
     }
 }
 
