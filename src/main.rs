@@ -1,11 +1,14 @@
 //! # NexusNitroLLM (nnLLM) - Simple Server Example
 //!
 //! This is a basic example showing how to use the NexusNitroLLM library
-//! to create a simple LLM proxy server.
+//! to create a simple LLM proxy server with HTTP/2 support.
 
 use nexus_nitro_llm::{Config, AppState, create_router};
 use std::net::SocketAddr;
 use tracing::info;
+use hyper::server::conn::http2;
+use hyper_util::rt::{TokioIo, TokioExecutor};
+use tower::Service;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -35,10 +38,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.backend_url.clone()
     };
     info!("Backend URL: {}", safe_url);
+    info!("✨ HTTP/2 enabled with prior knowledge (h2c)");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
-    axum::serve(listener, app).await?;
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let app = app.clone();
 
-    Ok(())
+        tokio::spawn(async move {
+            let io = TokioIo::new(stream);
+            
+            // Create a service for this connection
+            let service = hyper::service::service_fn(move |req| {
+                let mut app = app.clone();
+                async move {
+                    app.call(req).await.map_err(|e| {
+                        tracing::error!("Service error: {:?}", e);
+                        std::io::Error::new(std::io::ErrorKind::Other, format!("{:?}", e))
+                    })
+                }
+            });
+            
+            if let Err(err) = http2::Builder::new(TokioExecutor::new())
+                .serve_connection(io, service)
+                .await
+            {
+                tracing::error!("HTTP/2 connection error: {:?}", err);
+            }
+        });
+    }
 }

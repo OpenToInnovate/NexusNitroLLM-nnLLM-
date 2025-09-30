@@ -1553,6 +1553,8 @@ dependencies = [
  "futures-util",
  "hdrhistogram",
  "hmac",
+ "hyper 1.7.0",
+ "hyper-util",
  "napi",
  "napi-derive",
  "pyo3",
@@ -2599,6 +2601,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
+ "futures-util",
  "pin-project-lite",
  "tokio",
 ]
