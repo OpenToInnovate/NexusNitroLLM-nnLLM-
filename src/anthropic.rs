@@ -3,9 +3,82 @@
 //! This module provides support for Anthropic's Claude API format,
 //! converting between Anthropic and OpenAI formats internally.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
+use serde::de::{self, Visitor};
+use std::fmt;
 use crate::schemas::{ChatCompletionRequest, ChatCompletionResponse, Message, Usage};
 use crate::error::ProxyError;
+
+/// System prompt that can be either a string or an array of content blocks
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum SystemPrompt {
+    Text(String),
+    Blocks(Vec<AnthropicContentBlock>),
+}
+
+impl SystemPrompt {
+    /// Convert to a string representation
+    pub fn to_string(&self) -> String {
+        match self {
+            SystemPrompt::Text(text) => text.clone(),
+            SystemPrompt::Blocks(blocks) => {
+                blocks
+                    .iter()
+                    .filter_map(|block| match block {
+                        AnthropicContentBlock::Text { text } => Some(text.as_str()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for SystemPrompt {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct SystemPromptVisitor;
+
+        impl<'de> Visitor<'de> for SystemPromptVisitor {
+            type Value = SystemPrompt;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string or an array of content blocks")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<SystemPrompt, E>
+            where
+                E: de::Error,
+            {
+                Ok(SystemPrompt::Text(value.to_string()))
+            }
+
+            fn visit_string<E>(self, value: String) -> Result<SystemPrompt, E>
+            where
+                E: de::Error,
+            {
+                Ok(SystemPrompt::Text(value))
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<SystemPrompt, A::Error>
+            where
+                A: de::SeqAccess<'de>,
+            {
+                let mut blocks = Vec::new();
+                while let Some(block) = seq.next_element()? {
+                    blocks.push(block);
+                }
+                Ok(SystemPrompt::Blocks(blocks))
+            }
+        }
+
+        deserializer.deserialize_any(SystemPromptVisitor)
+    }
+}
 
 /// Anthropic Messages API Request
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -16,8 +89,8 @@ pub struct AnthropicRequest {
     pub messages: Vec<AnthropicMessage>,
     /// Maximum tokens to generate (required by Anthropic)
     pub max_tokens: u32,
-    /// System prompt (optional, separate from messages in Anthropic format)
-    pub system: Option<String>,
+    /// System prompt (optional, can be string or array of content blocks)
+    pub system: Option<SystemPrompt>,
     /// Sampling temperature (0.0 to 1.0)
     pub temperature: Option<f32>,
     /// Nucleus sampling parameter (0.0 to 1.0)
@@ -142,7 +215,7 @@ impl AnthropicRequest {
         if let Some(system) = &self.system {
             openai_messages.push(Message {
                 role: "system".to_string(),
-                content: Some(system.clone()),
+                content: Some(system.to_string()),
                 name: None,
                 tool_calls: None,
                 function_call: None,
