@@ -131,6 +131,9 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         // Main API endpoint for chat completions
         .route("/v1/chat/completions", post(chat_completions))
+        
+        // Anthropic API compatibility endpoint
+        .route("/v1/messages", post(handlers::anthropic_messages))
 
         // Health check endpoints for production monitoring
         .route("/health", get(handlers::health_check))

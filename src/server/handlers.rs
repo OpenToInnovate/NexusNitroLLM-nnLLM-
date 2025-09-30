@@ -10,7 +10,7 @@ use axum::{
 };
 use crate::{
     error::ProxyError,
-    schemas::ChatCompletionRequest,
+    schemas::{ChatCompletionRequest, ChatCompletionResponse},
 };
 #[cfg(feature = "streaming")]
 use crate::streaming::create_streaming_response;
@@ -166,4 +166,53 @@ pub async fn login_proxy(
 
     response_builder.body(axum::body::Body::from(body))
         .map_err(|e| ProxyError::Upstream(format!("Failed to build response: {}", e)))
+}
+/// Anthropic Messages API handler
+/// Converts Anthropic API format to OpenAI format and back
+pub async fn anthropic_messages(
+    State(state): State<AppState>,
+    Json(req): Json<crate::anthropic::AnthropicRequest>,
+) -> Result<Response, ProxyError> {
+    // Convert Anthropic request to OpenAI format
+    let openai_req = req.to_openai_request();
+    
+    // Check if streaming is requested
+    if openai_req.stream.unwrap_or(false) {
+        // Check if the adapter supports streaming
+        if state.adapter().supports_streaming() {
+            #[cfg(feature = "streaming")]
+            {
+                // For streaming, we need to handle SSE format conversion
+                // For now, delegate to the OpenAI streaming handler
+                // TODO: Convert OpenAI SSE events to Anthropic SSE format
+                let sse_response = create_streaming_response(state.adapter(), openai_req).await?;
+                Ok(sse_response.into_response())
+            }
+            #[cfg(not(feature = "streaming"))]
+            {
+                Err(ProxyError::BadRequest(
+                    "Streaming not compiled in this build".to_string()
+                ))
+            }
+        } else {
+            Err(ProxyError::BadRequest(
+                "stream=true unsupported for this adapter".to_string()
+            ))
+        }
+    } else {
+        // Get OpenAI response
+        let response = state.adapter().chat_completions(openai_req).await?;
+        
+        // Extract the response body as ChatCompletionResponse
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await
+            .map_err(|e| ProxyError::Internal(format!("Failed to read response body: {}", e)))?;
+        
+        let openai_resp: ChatCompletionResponse = serde_json::from_slice(&body_bytes)
+            .map_err(|e| ProxyError::Serialization(format!("Failed to parse OpenAI response: {}", e)))?;
+        
+        // Convert to Anthropic format
+        let anthropic_resp = crate::anthropic::AnthropicResponse::from_openai_response(openai_resp)?;
+        
+        Ok(JsonResponse(anthropic_resp).into_response())
+    }
 }

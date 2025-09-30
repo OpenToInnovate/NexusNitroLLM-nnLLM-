@@ -64,6 +64,9 @@ pub mod error;
 pub mod schemas;
 pub mod graceful_shutdown;
 
+// API format compatibility layers
+pub mod anthropic;
+
 // Domain modules
 pub mod adapters;
 
